@@ -1,0 +1,12 @@
+[debug] [2025-04-22T14:43:02.291Z] ----------------------------------------------------------------------
+[debug] [2025-04-22T14:43:02.295Z] Command:       /nix/store/ixbb20farqh1f4fqbmsn6b1ixn8mc8ij-nodejs-20.18.1/bin/node /nix/store/b9a1wqzb1vkh5xd2mrp196csvbgv8j13-firebase-tools-14.0.1/lib/node_modules/firebase-tools/lib/bin/firebase.js init hosting
+[debug] [2025-04-22T14:43:02.296Z] CLI Version:   14.0.1
+[debug] [2025-04-22T14:43:02.296Z] Platform:      linux
+[debug] [2025-04-22T14:43:02.296Z] Node Version:  v20.18.1
+[debug] [2025-04-22T14:43:02.296Z] Time:          Tue Apr 22 2025 14:43:02 GMT+0000 (Coordinated Universal Time)
+[debug] [2025-04-22T14:43:02.297Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2025-04-22T14:43:02.301Z] >>> [apiv2][query] GET https://firebase-public.firebaseio.com/cli.json [none]
+[debug] [2025-04-22T14:43:02.483Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-04-22T14:43:02.840Z] <<< [apiv2][status] GET https://firebase-public.firebaseio.com/cli.json 200
+[debug] [2025-04-22T14:43:02.841Z] <<< [apiv2][body] GET https://firebase-public.firebaseio.com/cli.json {"cloudBuildErrorAfter":1594252800000,"cloudBuildWarnAfter":1590019200000,"defaultNode10After":1594252800000,"minVersion":"3.0.5","node8DeploysDisabledAfter":1613390400000,"node8RuntimeDisabledAfter":1615809600000,"node8WarnAfter":1600128000000}

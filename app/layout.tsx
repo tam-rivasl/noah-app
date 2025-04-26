@@ -1,9 +1,6 @@
-import type React from "react"
 import "./globals.css"
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
-import ToolsNavigation from "@/components/tools-navigation"
-
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
@@ -12,17 +9,14 @@ export const metadata: Metadata = {
     generator: 'v0.dev'
 }
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+interface RootLayoutProps {
+  children: React.ReactNode;
+}
+
+export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang="en">
-      <body className={inter.className}>
-        {children}
-        <ToolsNavigation />
-      </body>
+      <body className={inter.className}>{children}</body>
     </html>
-  )
+  );
 }

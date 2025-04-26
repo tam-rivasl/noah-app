@@ -1,7 +1,7 @@
 "use client"
 
 import type { NoaState } from "./noa-tamagotchi"
-import PixelHealthBar from "./pixel-health-bar"
+import PixelStatusBar from "./pixel-status-bar"
 
 interface StatusBarsProps {
   noaState: NoaState
@@ -14,17 +14,17 @@ export default function StatusBars({ noaState }: StatusBarsProps) {
     <div className="w-full space-y-1 px-2">
       <div className="flex items-center gap-2">
         <span className="text-sm font-medium w-20 text-gray-700">Hambre:</span>
-        <PixelHealthBar value={hunger} maxValue={100} type="hunger" />
+        <PixelStatusBar value={hunger} maxValue={100} type="hunger" label={""} />
       </div>
 
       <div className="flex items-center gap-2">
         <span className="text-sm font-medium w-20 text-gray-700">Felicidad:</span>
-        <PixelHealthBar value={happiness} maxValue={100} type="happiness" />
+        <PixelStatusBar value={happiness} maxValue={100} type="happiness" label={""} />
       </div>
 
       <div className="flex items-center gap-2">
         <span className="text-sm font-medium w-20 text-gray-700">Energía:</span>
-        <PixelHealthBar value={energy} maxValue={100} type="energy" />
+        <PixelStatusBar value={energy} maxValue={100} type="energy" label={""} />
       </div>
     </div>
   )

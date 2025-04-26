@@ -1,0 +1,52 @@
+{
+  "normal": ["/images/noa-happy-normal.png"],
+  "excited": ["/images/noa-saltando-feliz.png"],
+  "sad": ["/images/noa-sad.png"],
+  "worried": ["/images/noa-crying.png"],
+  "sleeping": [
+    "/images/noa-sleeping.png",
+    "/images/noa-sleeping-z-2.png"
+  ],
+  "tired": ["/images/noa-sleeping-without-energy.png"],
+  "hungry": ["/images/noa-angry-with-hangry.png"],
+  "hungry-tired": ["/images/noa-sleeping.png"],
+  "bored": ["/images/noa-happy-normal.png"],
+
+  "eating": [
+    "/images/noa-comiendo.png",
+    "/images/noa-comiendo-2.png"
+  ],
+  "playing": [
+    "/images/noa-comienza-a-jugar.png",
+    "/images/noa-saltando-feliz.png",
+    "/images/noa-moviendo-la-cola.png"
+  ],
+  "petting": [
+    "/images/noa-saltando-feliz.png",
+    "/images/hand.png"
+  ],
+
+  "transitions": {
+    "hungry-tired_to_sleeping": [
+      "/images/noa-sleeping-z.png"
+    ],
+    "normal_to_playing": [
+      "/images/noa-happy-normal.png",
+      "/images/noa-comienza-a-jugar.png",
+      "/images/noa-saltando-feliz.png",
+      "/images/noa-moviendo-la-cola.png"
+    ],
+    "playing_to_normal": [
+      "/images/noa-saltando-feliz.png",
+      "/images/noa-happy-normal.png"
+    ],
+    "normal_to_petting": [
+      "/images/noa-happy-normal.png",
+      "/images/noa-petting-1.png"
+    ],
+    "petting_to_normal": [
+      "/images/noa-happy-normal.png",
+      "/images/hand.png"
+    ]
+  }
+}
