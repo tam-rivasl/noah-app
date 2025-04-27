@@ -82,6 +82,9 @@ export default function NoaSprite({
   const src = frames[frame] ?? frames[0] ?? "";
   const fadeClass = isTransitioning ? "animate-fade-cross" : "";
 
+    if(!src){
+        return null
+    }
   // 5) Render según acción o estado
   if (currentAction === "playing" && !isTransitioning) {
     return (

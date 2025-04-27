@@ -2,6 +2,32 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Base styles */
+body {
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* ---------------- UTILITIES ---------------- */
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .pixel-font {
+    font-family: 'Press Start 2P', monospace;
+  }
+
+  .pixel-art {
+    image-rendering: pixelated;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: crisp-edges;
+  }
+  .screen-content {
+    @apply flex flex-col items-center justify-center text-center text-white animate-fade-in;
+  }
+}
+
+/* ---------------- BASE VARIABLES ---------------- */
 @layer base {
   :root {
     --background: 0 0% 100%;
@@ -47,543 +73,179 @@
     --input: 240 3.7% 15.9%;
     --ring: 346.8 77.2% 49.8%;
   }
-}
 
-@layer base {
   * {
     @apply border-border;
   }
+
   body {
     @apply bg-background text-foreground;
   }
 }
 
-/* Pixel Art Styling */
-.pixel-art {
-  image-rendering: pixelated;
-  image-rendering: -moz-crisp-edges;
-  image-rendering: crisp-edges;
+/* ---------------- KEYFRAMES ANIMATIONS ---------------- */
+@keyframes damage-flash {
+  0%, 100% { background-color: #f87171; }
+  50% { background-color: #b91c1c; }
 }
-
-/* Font for pixel art text */
-@font-face {
-  font-family: "PixelFont";
-  src: local("Press Start 2P"), local("PressStart2P");
-  font-display: swap;
-}
-
-.font-pixel {
-  font-family: "PixelFont", monospace;
-}
-
-/* Noa's body parts */
-.noa-body {
-  position: absolute;
-  width: 24px;
-  height: 16px;
-  background-color: #f5d0a9;
-  border: 2px solid #8b4513;
-  border-radius: 8px;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-}
-
-.noa-body-sleeping {
-  transform: translate(-50%, -50%) rotate(45deg);
-}
-
-.noa-body-jump1 {
-  transform: translate(-50%, -60%);
-}
-
-.noa-body-jump2 {
-  transform: translate(-50%, -40%);
-}
-
-.noa-ears {
-  position: absolute;
-  width: 6px;
-  height: 8px;
-  background-color: #f5d0a9;
-  border: 2px solid #8b4513;
-  border-radius: 3px;
-  top: 35%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-}
-
-.noa-ears::before,
-.noa-ears::after {
-  content: "";
-  position: absolute;
-  width: 6px;
-  height: 8px;
-  background-color: #f5d0a9;
-  border: 2px solid #8b4513;
-  border-radius: 3px;
-}
-
-.noa-ears::before {
-  left: -8px;
-  transform: rotate(-15deg);
-}
-
-.noa-ears::after {
-  right: -8px;
-  transform: rotate(15deg);
-}
-
-.noa-ears-perked::before,
-.noa-ears-perked::after {
-  height: 10px;
-}
-
-.noa-ears-down::before,
-.noa-ears-down::after {
-  height: 6px;
-  transform: rotate(0);
-}
-
-.noa-ears-alert::before,
-.noa-ears-alert::after {
-  height: 12px;
-}
-
-.noa-face-normal::before,
-.noa-face-normal::after,
-.noa-face-happy::before,
-.noa-face-happy::after,
-.noa-face-sad::before,
-.noa-face-sad::after,
-.noa-face-worried::before,
-.noa-face-worried::after,
-.noa-face-sleeping::before,
-.noa-face-sleeping::after,
-.noa-face-eating::before,
-.noa-face-eating::after {
-  content: "";
-  position: absolute;
-  width: 4px;
-  height: 4px;
-  background-color: #000;
-  border-radius: 50%;
-  top: 2px;
-}
-
-.noa-face-normal::before,
-.noa-face-happy::before,
-.noa-face-sad::before,
-.noa-face-worried::before,
-.noa-face-eating::before {
-  left: -4px;
-}
-
-.noa-face-normal::after,
-.noa-face-happy::after,
-.noa-face-sad::after,
-.noa-face-worried::after,
-.noa-face-eating::after {
-  right: -4px;
-}
-
-.noa-face-normal,
-.noa-face-happy,
-.noa-face-sad,
-.noa-face-worried,
-.noa-face-sleeping,
-.noa-face-eating {
-  position: absolute;
-  width: 8px;
-  height: 4px;
-  top: 55%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-}
-
-.noa-face-normal {
-  background-color: #8b4513;
-  border-radius: 2px;
-}
-
-.noa-face-happy {
-  background-color: #8b4513;
-  border-radius: 0 0 4px 4px;
-  height: 6px;
-}
-
-.noa-face-sad {
-  background-color: #8b4513;
-  border-radius: 4px 4px 0 0;
-  height: 6px;
-  transform: translate(-50%, -30%);
+@keyframes pixel-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
 }
 
-.noa-face-worried {
-  background-color: #8b4513;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
+.pixel-loading {
+  animation: pixel-blink 1s steps(2, start) infinite;
 }
-
-.noa-face-sleeping {
-  width: 8px;
-  height: 2px;
-  background-color: #8b4513;
-  transform: translate(-50%, -50%) rotate(45deg);
-}
-
-.noa-face-sleeping::before,
-.noa-face-sleeping::after {
-  display: none;
-}
-
-.noa-face-eating {
-  background-color: #8b4513;
-  border-radius: 50%;
-  width: 6px;
-  height: 6px;
-}
-
-.noa-tail {
-  position: absolute;
-  width: 8px;
-  height: 12px;
-  background-color: #f5d0a9;
-  border: 2px solid #8b4513;
-  border-radius: 4px;
-  bottom: 35%;
-  left: 65%;
-  transform-origin: bottom center;
-}
-
-.noa-tail-wag1 {
-  transform: rotate(15deg);
-}
-
-.noa-tail-wag2 {
-  transform: rotate(-15deg);
-}
-
-.noa-tail-wag1-fast {
-  transform: rotate(30deg);
-}
-
-.noa-tail-wag2-fast {
-  transform: rotate(-30deg);
-}
-
-.noa-tail-down {
-  transform: rotate(90deg);
-  height: 8px;
-}
-
-.noa-zzz {
-  position: absolute;
-  top: 20%;
-  right: 20%;
-  font-size: 16px;
-  color: #6366f1;
-  animation: float 2s infinite alternate;
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-3px); }
+  40% { transform: translateX(3px); }
+  60% { transform: translateX(-3px); }
+  80% { transform: translateX(3px); }
 }
 
-.noa-zzz::before {
-  content: "z";
-  position: absolute;
-  font-size: 10px;
+@keyframes boom-float {
+  0% { opacity: 1; transform: translate(-50%, 0) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -40px) scale(1.2); }
 }
 
-.noa-zzz::after {
-  content: "zz";
-  position: absolute;
-  top: -8px;
-  right: -8px;
-  font-size: 14px;
+@keyframes pop-in {
+  0% { transform: scale(0); opacity: 0; }
+  60% { transform: scale(1.2); opacity: 1; }
+  100% { transform: scale(1); }
 }
 
-.noa-food {
-  position: absolute;
-  width: 8px;
-  height: 8px;
-  background-color: #a0522d;
-  border-radius: 50%;
-  bottom: 40%;
-  left: 30%;
+@keyframes bounce-random {
+  0%, 100% { transform: translate(0, 0); }
+  25% { transform: translate(20px, -15px); }
+  50% { transform: translate(-15px, 20px); }
+  75% { transform: translate(10px, -10px); }
 }
 
-.noa-ball {
-  position: absolute;
-  width: 10px;
-  height: 10px;
-  background-color: #ff6b6b;
-  border: 2px solid #ff4757;
-  border-radius: 50%;
-  bottom: 30%;
-  right: 30%;
-  animation: bounce 1s infinite alternate;
+@keyframes pixel-fill {
+  0% { transform: scale(0.8); opacity: 0.2; }
+  50% { transform: scale(1.2); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
 }
 
-.noa-hand {
-  position: absolute;
-  width: 12px;
-  height: 8px;
-  border-top: 2px solid #8b4513;
-  border-radius: 50% 50% 0 0;
-  top: 40%;
-  right: 20%;
-  animation: pet 1s infinite alternate;
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
 }
 
-@keyframes float {
-  0% {
-    transform: translateY(0);
-  }
-  100% {
-    transform: translateY(-5px);
-  }
+@keyframes shake-screen {
+  0% { transform: translate(0px, 0px); }
+  25% { transform: translate(2px, -2px); }
+  50% { transform: translate(-2px, 2px); }
+  75% { transform: translate(2px, 2px); }
+  100% { transform: translate(0px, 0px); }
 }
 
-@keyframes bounce {
-  0% {
-    transform: translateY(0);
-  }
-  100% {
-    transform: translateY(-10px);
-  }
+.animate-shake {
+  animation: shake-screen 0.5s infinite;
 }
 
-@keyframes pet {
-  0% {
-    transform: translateY(0) rotate(0);
-  }
-  100% {
-    transform: translateY(-5px) rotate(10deg);
-  }
-}
-
-@keyframes fall {
-  0% {
-    transform: translateY(0);
-    opacity: 1;
-  }
-  100% {
-    transform: translateY(20px);
-    opacity: 0;
-  }
-}
-
-@keyframes twinkle {
-  0%,
-  100% {
-    opacity: 0.2;
-  }
-  50% {
-    opacity: 1;
-  }
-}
-
-.animate-fall {
-  animation: fall 2s infinite;
-}
-
-.animate-twinkle {
-  animation: twinkle 3s ease-in-out infinite;
-}
-
-/* Add these new animations at the end of the file */
 
-@keyframes float-up {
-  0% {
-    transform: translateY(0);
-    opacity: 1;
-  }
-  100% {
-    transform: translateY(-10px);
-    opacity: 0;
-  }
+/* ---------------- ANIMATION CLASSES ---------------- */
+.animate-damage-flash {
+  animation: damage-flash 1s ease-in-out infinite;
 }
 
-@keyframes float-particle {
-  0% {
-    transform: translateY(0) translateX(0);
-    opacity: 0.8;
-  }
-  100% {
-    transform: translateY(-15px) translateX(5px);
-    opacity: 0;
-  }
+.animate-shake {
+  animation: shake 0.5s ease-in-out infinite;
 }
 
-@keyframes ping-out {
-  0% {
-    transform: scale(0.2);
-    opacity: 1;
-  }
-  80% {
-    transform: scale(1.5);
-    opacity: 0.5;
-  }
-  100% {
-    transform: scale(2);
-    opacity: 0;
-  }
+.animate-boom {
+  animation: boom-float 1s ease-out forwards;
 }
 
-@keyframes sparkle {
-  0% {
-    transform: scale(0);
-    opacity: 0;
-  }
-  50% {
-    transform: scale(1.5);
-    opacity: 1;
-  }
-  100% {
-    transform: scale(0);
-    opacity: 0;
-  }
+.animate-pop-in {
+  animation: pop-in 0.3s ease-out forwards;
 }
 
-@keyframes tear-drop {
-  0% {
-    transform: translateY(0);
-    opacity: 0.8;
-  }
-  100% {
-    transform: translateY(15px);
-    opacity: 0;
-  }
+.animate-bounce-random {
+  animation: bounce-random 2s infinite ease-in-out;
 }
 
-/* New animations for state transitions */
-@keyframes fade-in {
-  0% {
-    opacity: 0;
-  }
-  100% {
-    opacity: 1;
-  }
+.animate-pixel-fill {
+  animation: pixel-fill 0.4s ease-in-out forwards;
 }
 
-@keyframes fade-out {
-  0% {
-    opacity: 1;
-  }
-  100% {
-    opacity: 0;
-  }
+.animate-blink {
+  animation: blink 1s steps(2, start) infinite;
 }
 
-@keyframes fade-cross {
-  0% {
-    opacity: 0;
-    transform: scale(0.95);
-  }
-  50% {
-    opacity: 0.7;
-    transform: scale(1.02);
-  }
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
+/* ---------------- BACKGROUNDS ---------------- */
+.background-space {
+  background-image: url("/images/background-mini-game-space.jpg");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: cover;
+  z-index: -1;
 }
 
-/* New animations for game interactions */
-@keyframes rotate-object {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
+.background-woods {
+  background-image: url("/images/woods-background.png");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: cover;
+  z-index: -1;
 }
-
-@keyframes bounce-around {
-  0% {
-    transform: translate(0, 0);
-  }
-  25% {
-    transform: translate(10px, -10px);
-  }
-  50% {
-    transform: translate(0, -15px);
-  }
-  75% {
-    transform: translate(-10px, -10px);
-  }
-  100% {
-    transform: translate(0, 0);
-  }
-}
-
-@keyframes pulse-scale {
-  0%,
-  100% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.2);
-  }
-}
-
-.animate-float-up {
-  animation: float-up 1.5s ease-out forwards;
+/* ---------------- BUTTONS ---------------- */
+/* 🎮 Botones estilo Pixel Art Consola */
+.pixel-button {
+  box-shadow: 2px 2px 0px #000;
+  transition: transform 0.1s ease-in-out, box-shadow 0.1s ease-in-out;
 }
 
-.animate-float-particle {
-  animation: float-particle 2s ease-out forwards;
+.pixel-button:active {
+  transform: translate(2px, 2px);
+  box-shadow: 0px 0px 0px #000;
 }
 
-.animate-ping-out {
-  animation: ping-out 1s ease-out forwards;
+.pixel-font {
+  font-family: "Press Start 2P", monospace;
 }
 
-.animate-sparkle {
-  animation: sparkle 1.5s ease-out forwards;
+/* --- 🎮 GAMEBOY STYLING NUEVO 🎮 --- */
+.gameboy {
+  @apply flex flex-col items-center justify-start bg-gradient-to-br from-gray-300 via-gray-100 to-gray-300 rounded-[2rem] shadow-[8px_8px_0px_rgba(0,0,0,0.7)] p-4 w-[340px] h-[600px] relative overflow-hidden border-[12px] border-blue-700;
+  background-image: radial-gradient(circle at 20% 20%, #ffffff 0%, #c7d2fe 100%);
 }
 
-.animate-tear-drop {
-  animation: tear-drop 2s ease-out forwards;
+.gameboy-top2 {
+  width: 100%;
+  height: 235px; /* Más altura para que se vea el logo */
+  background-image: url('/images/logo/background-logo.jpg'); /* aquí pon el path correcto */
+  background-size: cover;
+  background-position: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
-.animate-fade-in {
-  animation: fade-in 0.6s ease-in-out forwards;
+.press-start-text {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.75rem;
+  color: #fefefe;
+  margin-bottom: 32px; /* Antes estaba sin margen */
 }
 
-.animate-fade-out {
-  animation: fade-out 0.6s ease-in-out forwards;
-}
-
-.animate-fade-cross {
-  animation: fade-cross 0.8s ease-in-out forwards;
-}
-
-.animate-rotate {
-  animation: rotate-object 2s linear infinite;
-}
 
-.animate-bounce-around {
-  animation: bounce-around 2s ease-in-out infinite;
+.gameboy-logo {
+  width: 180px; /* Ajusta a tu preferencia */
+  height: auto;
+  object-fit: contain;
 }
 
-.animate-pulse-scale {
-  animation: pulse-scale 1.5s ease-in-out infinite;
+.gameboy-screen {
+  @apply relative bg-blue-900 w-[260px] h-[260px] rounded-lg border-[6px] border-blue-950 overflow-hidden shadow-inner flex items-center justify-center mb-6;
 }
 
-.bg-grid {
-  background-image: linear-gradient(to right, rgba(0, 0, 0, 0.1) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(0, 0, 0, 0.1) 1px, transparent 1px);
-  background-size: 8px 8px;
+.screen-content {
+  @apply flex flex-col items-center justify-center text-center text-white animate-fade-in;
 }
 
-/* Responsive design */
-@media (max-width: 768px) {
-  .responsive-grid {
-    grid-template-columns: 1fr; /* Single column on smaller screens */
-  }
-  
-  .responsive-grid > * {
-    width: 100%; /* Full width for each child */
-  }
+.gameboy-controls {
+  @apply flex flex-col items-center gap-2;
 }

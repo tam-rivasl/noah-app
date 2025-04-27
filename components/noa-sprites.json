@@ -1,7 +1,7 @@
-{
+ {
   "normal": ["/images/noa-happy-normal.png"],
   "excited": ["/images/noa-saltando-feliz.png"],
-  "sad": ["/images/noa-sad.png"],
+  "sad": ["/images/noa-sad-withhungry.png"],
   "worried": ["/images/noa-crying.png"],
   "sleeping": [
     "/images/noa-sleeping.png",
@@ -27,9 +27,7 @@
   ],
 
   "transitions": {
-    "hungry-tired_to_sleeping": [
-      "/images/noa-sleeping-z.png"
-    ],
+    "hungry-tired_to_sleeping": [],
     "normal_to_playing": [
       "/images/noa-happy-normal.png",
       "/images/noa-comienza-a-jugar.png",
@@ -41,12 +39,10 @@
       "/images/noa-happy-normal.png"
     ],
     "normal_to_petting": [
-      "/images/noa-happy-normal.png",
-      "/images/noa-petting-1.png"
+      "/images/noa-happy-normal.png"
     ],
     "petting_to_normal": [
-      "/images/noa-happy-normal.png",
-      "/images/hand.png"
+      "/images/noa-happy-normal.png"
     ]
   }
 }
