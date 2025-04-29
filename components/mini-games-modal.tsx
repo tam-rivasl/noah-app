@@ -44,9 +44,9 @@ export default function MiniGamesModal({ isOpen, onClose }: MiniGamesModalProps)
           </button>
         </div>
       ) : selectedGame === "catch" ? (
-        <MiniGameCatch onExit={handleClose} />
+        <MiniGameCatch onExit={handleClose} moveCommand={null} />
       ) : (
-        <MiniGameSpace onExit={handleClose} />
+        <MiniGameSpace onExit={handleClose} moveCommand={null} />
       )}
     </div>
   );

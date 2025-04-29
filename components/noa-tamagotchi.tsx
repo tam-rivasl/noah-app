@@ -1,11 +1,12 @@
 "use client";
-
-import { useState, useEffect, useCallback } from "react";
-import NoaSprite, { Action, EmotionalState } from "./noa-sprite";
+import React, { useState, useEffect, useCallback } from "react";
 import StatusBars from "./status-bars";
 import ActionButtons from "./action-buttons";
 import MiniGameCatch from "./mini-game";
 import MiniGameSpace from "./mini-game-space";
+import NoaWalking from "./noa-walking";
+import NoaEating from "./noa-eating";
+import NoaSleeping from "./noa-sleeping";
 
 export type NoaState = {
   hunger: number;
@@ -24,217 +25,211 @@ const initialState: NoaState = {
 type Screen = "start" | "main" | "menu" | "catch" | "space";
 
 export default function NoaTamagotchi() {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
+
   const [noaState, setNoaState] = useState<NoaState>(initialState);
-  const [currentAction, setCurrentAction] = useState<Action>(null);
+  const [currentAction, setCurrentAction] = useState<"eating" | "petting" | "sleeping" | null>(null);
   const [isSleeping, setIsSleeping] = useState(false);
-  const [backgroundImage, setBackgroundImage] = useState<string>("/images/back-grounds/day-background.jpg");
   const [screen, setScreen] = useState<Screen>("start");
-  const [message, setMessage] = useState<string>("");
   const [moveCommand, setMoveCommand] = useState<"left" | "right" | "up" | "down" | null>(null);
-  const menuOptions: ("catch" | "space")[] = ["catch", "space"];
   const [selectedMenuIndex, setSelectedMenuIndex] = useState(0);
+  const menuOptions: ("catch" | "space")[] = ["catch", "space"];
 
-  const startSelectedGame = () => {
-    const selected = menuOptions[selectedMenuIndex];
-    if (selected === "catch" || selected === "space") {
-      setScreen(selected);
-    }
-  };
+  // Time & Background
+  const [time, setTime] = useState(new Date());
+  const [backgroundImage, setBackgroundImage] = useState<string>("/images/back-grounds/day.png");
 
-  // ---------- CARGA DE ESTADO ----------
+  // Load/Save state
   useEffect(() => {
     const saved = localStorage.getItem("noaState");
     if (saved) {
       const parsed = JSON.parse(saved) as NoaState;
       const now = Date.now();
-      const minutesPassed = (now - parsed.lastUpdated) / 60000;
-      const decay = Math.floor(minutesPassed / 5);
+      const minutes = (now - parsed.lastUpdated) / 60000;
+      const decay = Math.floor(minutes / 5);
       if (decay > 0) {
         parsed.hunger = Math.max(parsed.hunger - decay, 0);
         parsed.happiness = Math.max(parsed.happiness - decay, 0);
         parsed.energy = Math.max(parsed.energy - decay, 0);
-        parsed.lastUpdated = now;
       }
-      setNoaState(parsed);
+      setNoaState({ ...parsed, lastUpdated: now });
     }
   }, []);
-
   useEffect(() => {
     localStorage.setItem("noaState", JSON.stringify({ ...noaState, lastUpdated: Date.now() }));
   }, [noaState]);
 
+  // Stats decay
   useEffect(() => {
     const id = setInterval(() => {
-      setNoaState((prev) => ({
-        ...prev,
-        hunger: Math.max(prev.hunger - 1, 0),
-        happiness: Math.max(prev.happiness - 1, 0),
-        energy: Math.max(prev.energy - 1, 0),
+      setNoaState(p => ({
+        ...p,
+        hunger: Math.max(p.hunger - 1, 0),
+        happiness: Math.max(p.happiness - 1, 0),
+        energy: Math.max(p.energy - 1, 0),
         lastUpdated: Date.now(),
       }));
     }, 60000);
     return () => clearInterval(id);
   }, []);
 
-  // ---------- ESTADO EMOCIONAL ----------
-  const getEmotionalState = useCallback((): EmotionalState => {
+  // Clock
+  useEffect(() => {
+    const tick = () => setTime(new Date());
+    tick();
+    const id = setInterval(tick, 60000);
+    return () => clearInterval(id);
+  }, []);
+
+  // Background by hour
+  useEffect(() => {
+    const hour = time.getHours();
+    if (hour >= 6 && hour < 18) {
+      setBackgroundImage("/images/back-grounds/day.png");
+    } else if (hour < 20) {
+      setBackgroundImage("/images/back-grounds/tarde.png");
+    } else {
+      setBackgroundImage("/images/back-grounds/night.png");
+    }
+  }, [time]);
+
+
+  // Emotional state
+  const getEmotional = useCallback(() => {
     const { hunger, happiness, energy } = noaState;
     if (isSleeping) return "sleeping";
-    if (hunger < 30 && energy < 30) return "hungry-tired";
-    if (energy < 20) return "tired";
     if (hunger < 20) return "hungry";
+    if (energy < 20) return "tired";
     if (happiness < 20) return "sad";
-    if (happiness < 40) return "bored";
-    if (hunger < 40 || energy < 40) return "worried";
-    if (hunger > 80 && happiness > 80 && energy > 80) return "excited";
     return "normal";
   }, [noaState, isSleeping]);
 
-  const emotionalState = getEmotionalState();
-
-  // ---------- DORMIR ----------
+  // Sleeping refill
   useEffect(() => {
     let id: NodeJS.Timeout;
     if (isSleeping) {
-      setMessage("Noa está durmiendo... 💤");
       id = setInterval(() => {
-        setNoaState((prev) => ({
-          ...prev,
-          energy: Math.min(prev.energy + 5, 100),
-        }));
+        setNoaState(p => ({ ...p, energy: Math.min(p.energy + 5, 100) }));
       }, 10000);
-    } else {
-      setMessage("Noa se ha despertado! 🌞");
     }
     return () => clearInterval(id);
   }, [isSleeping]);
-
-  // ---------- CAMBIO DE FONDO ----------
+ 
   useEffect(() => {
-    const { energy } = noaState;
-    if (energy > 50) setBackgroundImage("/images/back-grounds/day-background.jpg");
-    else if (energy > 10) setBackgroundImage("/images/back-grounds/atardecer-background.webp");
-    else setBackgroundImage("/images/back-grounds/sleep-background.jpg");
+    if (noaState.energy === 0 && !isSleeping) {
+      toggleSleep();
+    }
   }, [noaState.energy, isSleeping]);
-
-  // ---------- ACCIONES ----------
+  
+  // Actions
   const feedNoa = () => {
-    if (isSleeping) {
-      setMessage("Noa está durmiendo, no la molestes.");
-      return;
-    }
+    if (isSleeping) return;
     setCurrentAction("eating");
-    setTimeout(() => setCurrentAction(null), 2000);
-    setNoaState((prev) => ({
-      ...prev,
-      hunger: Math.min(prev.hunger + 20, 100),
-      energy: Math.min(prev.energy + 5, 100),
-    }));
-    setMessage("¡Noa está comiendo! 🍖");
+    setNoaState(p => ({ ...p, hunger: Math.min(p.hunger + 20, 100), energy: Math.min(p.energy + 5, 100) }));
   };
-
   const petNoa = () => {
-    if (isSleeping) {
-      setMessage("Noa está durmiendo, déjala descansar.");
-      return;
-    }
+    if (isSleeping) return;
     setCurrentAction("petting");
-    setTimeout(() => setCurrentAction(null), 2000);
-    setNoaState((prev) => ({
-      ...prev,
-      happiness: Math.min(prev.happiness + 10, 100),
-    }));
-    setMessage("¡Noa se siente querida! 💖");
+    setNoaState(p => ({ ...p, happiness: Math.min(p.happiness + 10, 100) }));
   };
-
-  const toggleSleep = () => setIsSleeping((prev) => !prev);
-
-  const handleStart = () => {
-    if (screen === "start") {
-      setScreen("main");
-    } else if (screen === "main") {
-      setScreen("menu");
+  const toggleSleep = () => {
+    setIsSleeping(s => !s);
+    setCurrentAction(s => s ? null : "sleeping");
+  };
+  useEffect(() => {
+    if (currentAction) {
+      const to = setTimeout(() => setCurrentAction(null), 2000);
+      return () => clearTimeout(to);
     }
-  };
+  }, [currentAction]);
 
-  const handleBack = () => {
+  // Navigation
+  const handleStart = () => setScreen(prev => prev === "start" ? "main" : "menu");
+  const handleBack = () => setScreen(prev => prev === "menu" ? "main" : "menu");
+  const startSelectedGame = () => setScreen(menuOptions[selectedMenuIndex]);
+  const handleMove = (dir: "left" | "right" | "up" | "down") => {
     if (screen === "menu") {
-      setScreen("main");
-    } else if (screen === "catch" || screen === "space") {
-      setScreen("menu");
+      setSelectedMenuIndex(i =>
+        dir === "left"
+          ? (i - 1 + menuOptions.length) % menuOptions.length
+          : (i + 1) % menuOptions.length
+      );
     }
-  };
-
-  const handleMove = (direction: "left" | "right" | "up" | "down") => {
-    if (screen === "menu") {
-      if (direction === "left") {
-        setSelectedMenuIndex((prev) => (prev - 1 + menuOptions.length) % menuOptions.length);
-      }
-      if (direction === "right") {
-        setSelectedMenuIndex((prev) => (prev + 1) % menuOptions.length);
-      }
-    }
-    setMoveCommand(direction);
+    setMoveCommand(dir);
     setTimeout(() => setMoveCommand(null), 100);
   };
 
   return (
     <div className="gameboy">
-      {/* --- Parte Superior --- */}
-     {/* --- Parte Superior --- */}
-     <div className="gameboy-top">
-  <img
-    src="/images/logo/noa-console.png"
-    alt="NOA Console"
-    className="gameboy-logo"
-  />
-</div>
-      {/* --- Pantalla --- */}
-      <div className="gameboy-screen">
-        {/* Contenido dinámico */}
+      <div className="gameboy-top relative">
+        <img src="/images/logo/noa-console.png" alt="NOA Console" className="gameboy-logo mx-auto" />
+      </div>
+
+      <div className="gameboy-screen relative overflow-hidden">
         {screen === "start" && (
-          <div className="gameboy-top2 flex flex-col items-center justify-end">
-  <p className="press-start-text animate-blink mt-2">Press Start</p>
-</div>
+          <div className="gameboy-top2 flex flex-col items-center justify-end h-full">
+            <p className="press-start-text animate-blink">Press Start</p>
+          </div>
         )}
 
         {screen === "main" && (
           <>
+            {/* Background */}
             <div
               className="absolute inset-0 bg-cover bg-center"
               style={{ backgroundImage: `url(${backgroundImage})` }}
             />
-            {backgroundImage.includes("sleep-background") && (
-              <div className="absolute inset-0 animate-twinkle pointer-events-none" />
-            )}
-            <div className="relative z-10 flex flex-col items-center p-2">
-              <StatusBars noaState={noaState} />
-              <div className="text-[10px] text-white bg-black/60 px-2 py-1 rounded-full my-1">
-                {backgroundImage.includes("day") ? "Día ☀️" : backgroundImage.includes("atardecer") ? "Tarde 🌇" : "Noche 🌙"}
+
+            {/* Top HUD: Clock + StatusBars */}
+            {mounted && (
+              <div className="absolute top-2 left-2 right-2 flex flex-col items-end gap-2 z-20">
+                {/* StatusBars */}
+                <div className="w-full flex justify-center">
+                  <StatusBars noaState={noaState} />
+                </div>
+                {/* Clock */}
+                <div className="pixel-font text-white bg-black/50 px-2 py-1 rounded">
+                  {time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </div>
               </div>
-              <h1 className="text-sm font-bold text-white">Noa {isSleeping ? "💤" : emotionalState === "hungry-tired" ? "😴🍽️" : "✨"}</h1>
-              <NoaSprite
-                emotionalState={emotionalState}
-                currentAction={currentAction}
-                hungerLevel={noaState.hunger}
-                happinessLevel={noaState.happiness}
-                energyLevel={noaState.energy}
-              />
+            )}
+
+            {/* Main character/actions */}
+            <div className="relative z-10 flex flex-col items-center justify-end w-full h-full p-2 pt-16">
+              <div className="relative flex items-end justify-center w-full h-full">
+                {currentAction === "eating" && (
+                  <div className="w-[40px] h-[80px]">
+                    <NoaEating />
+                  </div>
+                )}
+                {currentAction === "sleeping" && (
+                  <div className="w-[40px] h-[80px]">
+                    <NoaSleeping />
+                  </div>
+                )}
+                {!currentAction && !isSleeping && (
+                  <div className="w-[40px] h-[80px]">
+                    <NoaWalking />
+                  </div>
+                )}
+              </div>
             </div>
           </>
         )}
 
+
         {screen === "menu" && (
-          <div className="flex flex-col items-center justify-center text-white text-center">
-            <h2 className="text-lg pixel-font mb-4">Selecciona un minijuego</h2>
+          <div className="flex flex-col items-center justify-center text-white h-full">
+            <h2 className="text-lg pixel-font mb-2">Selecciona un minijuego</h2>
             <div className="flex gap-4">
-              {menuOptions.map((option, idx) => (
+              {menuOptions.map((opt, idx) => (
                 <button
-                  key={option}
-                  onClick={() => setScreen(option)}
-                  className={`px-4 py-2 text-sm rounded ${selectedMenuIndex === idx ? "bg-white text-black" : "bg-black/30"}`}
+                  key={opt}
+                  onClick={() => setScreen(opt)}
+                  className={`px-4 py-2 text-sm rounded ${selectedMenuIndex === idx ? 'bg-white text-black' : 'bg-black/30'}`}
                 >
-                  {option === "catch" ? "🥎 Atrapa" : "☄️ Meteoritos"}
+                  {opt === 'catch' ? '🥎 Atrapa' : '☄️ Meteoritos'}
                 </button>
               ))}
             </div>
@@ -245,23 +240,19 @@ export default function NoaTamagotchi() {
         {screen === "space" && <MiniGameSpace onExit={handleBack} moveCommand={moveCommand} />}
       </div>
 
-      {/* --- Controles --- */}
       <div className="gameboy-controls">
         <ActionButtons
           onFeed={feedNoa}
           onPet={petNoa}
           onSleep={toggleSleep}
-          onReset={() => {
-            localStorage.removeItem("noaState");
-            setNoaState(initialState);
-          }}
+          onReset={() => { localStorage.removeItem('noaState'); setNoaState(initialState); }}
           onStartGame={startSelectedGame}
           onStart={handleStart}
           onMove={handleMove}
           onBack={handleBack}
           isSleeping={isSleeping}
-          isStarting={screen === "start"}
-          inMenu={screen === "menu" || screen === "catch" || screen === "space"}
+          isStarting={screen === 'start'}
+          inMenu={['menu', 'catch', 'space'].includes(screen)}
         />
       </div>
     </div>

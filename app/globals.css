@@ -92,6 +92,20 @@ body {
   0%, 100% { opacity: 1; }
   50% { opacity: 0; }
 }
+@keyframes float-up {
+  0% {
+    transform: translate(-50%, 0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -40px) scale(1.2);
+    opacity: 0;
+  }
+}
+
+.animate-float-up {
+  animation: float-up 1s ease-out forwards;
+}
 
 .pixel-loading {
   animation: pixel-blink 1s steps(2, start) infinite;
@@ -209,8 +223,21 @@ body {
 
 /* --- 🎮 GAMEBOY STYLING NUEVO 🎮 --- */
 .gameboy {
-  @apply flex flex-col items-center justify-start bg-gradient-to-br from-gray-300 via-gray-100 to-gray-300 rounded-[2rem] shadow-[8px_8px_0px_rgba(0,0,0,0.7)] p-4 w-[340px] h-[600px] relative overflow-hidden border-[12px] border-blue-700;
-  background-image: radial-gradient(circle at 20% 20%, #ffffff 0%, #c7d2fe 100%);
+  @apply flex flex-col items-center justify-start 
+  bg-gradient-to-br from-blue-300 via-blue-400 to-slate-500
+  rounded-[2rem] 
+  shadow-[8px_8px_0px_rgba(0,0,0,0.7),inset_0_6px_12px_rgba(0,0,0,0.25)] 
+  p-6 
+  w-[340px] 
+  h-[600px] 
+  relative overflow-hidden 
+  backdrop-blur-md 
+  bg-opacity-90;
+  box-shadow: inset 0 4px 8px rgba(0, 0, 0, 0.6); /* sombra interior */
+  background-image: url('/images/back-grounds/texture4.png'); /* Asegúrate de mover la imagen a /public/images */
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
 }
 
 .gameboy-top2 {
@@ -233,8 +260,8 @@ body {
 
 
 .gameboy-logo {
-  width: 180px; /* Ajusta a tu preferencia */
-  height: auto;
+  width: 100px; /* Ajusta a tu preferencia */
+  height: 60px;
   object-fit: contain;
 }
 
@@ -249,3 +276,6 @@ body {
 .gameboy-controls {
   @apply flex flex-col items-center gap-2;
 }
+
+
+

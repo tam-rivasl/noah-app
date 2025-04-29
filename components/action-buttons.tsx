@@ -1,9 +1,7 @@
-// Primero el ActionButtons corregido
-
 "use client";
 
 import { useState } from "react";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, Moon } from "lucide-react"; // Agrego Moon ícono
 
 interface ActionButtonsProps {
   onFeed: () => void;
@@ -48,24 +46,24 @@ export default function ActionButtons({
           <div></div>
           <button
             onClick={() => handleAction("up", () => onMove("up"))}
-            className="w-6 h-6 bg-gray-800 rounded-sm shadow-md"
+            className="w-8 h-8 rounded-full bg-gray-700 shadow-[inset_0_2px_4px_rgba(255,255,255,0.2),0px_4px_0px_0px_rgba(0,0,0,0.8)] active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)]"
           ></button>
           <div></div>
 
           <button
             onClick={() => handleAction("left", () => onMove("left"))}
-            className="w-6 h-6 bg-gray-800 rounded-sm shadow-md"
+            className="w-8 h-8 rounded-full bg-gray-700 shadow-[inset_0_2px_4px_rgba(255,255,255,0.2),0px_4px_0px_0px_rgba(0,0,0,0.8)] active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)]"
           ></button>
-          <div className="w-6 h-6"></div>
+          <div className="w-8 h-8"></div>
           <button
             onClick={() => handleAction("right", () => onMove("right"))}
-            className="w-6 h-6 bg-gray-800 rounded-sm shadow-md"
+            className="w-8 h-8 rounded-full bg-gray-700 shadow-[inset_0_2px_4px_rgba(255,255,255,0.2),0px_4px_0px_0px_rgba(0,0,0,0.8)] active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)]"
           ></button>
 
           <div></div>
           <button
             onClick={() => handleAction("down", () => onMove("down"))}
-            className="w-6 h-6 bg-gray-800 rounded-sm shadow-md"
+            className="w-8 h-8 rounded-full bg-gray-700 shadow-[inset_0_2px_4px_rgba(255,255,255,0.2),0px_4px_0px_0px_rgba(0,0,0,0.8)] active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)]"
           ></button>
           <div></div>
         </div>
@@ -73,34 +71,45 @@ export default function ActionButtons({
         {/* Botones A y B */}
         <div className="flex flex-col items-center gap-4">
           <button
-             onClick={() => handleAction("a", inMenu ? onStartGame : onFeed)}
+            onClick={() => handleAction("a", inMenu ? onStartGame : onFeed)}
             disabled={activeButton !== null || isSleeping || isStarting}
-            className="w-10 h-10 bg-red-400 hover:bg-red-500 rounded-full shadow-md text-black font-bold"
+            className="w-12 h-12 rounded-full bg-red-700 text-white font-bold pixel-font shadow-[inset_0_2px_4px_rgba(255,255,255,0.2),0px_4px_0px_0px_rgba(0,0,0,0.8)] active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)]"
           >
             A
           </button>
           <button
             onClick={() => handleAction("b", inMenu ? onBack : onPet)}
             disabled={activeButton !== null || isStarting}
-            className="w-10 h-10 bg-blue-400 hover:bg-blue-500 rounded-full shadow-md text-black font-bold"
+            className="w-12 h-12 rounded-full bg-red-700 text-white font-bold pixel-font shadow-[inset_0_2px_4px_rgba(255,255,255,0.2),0px_4px_0px_0px_rgba(0,0,0,0.8)] active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)]"
           >
             B
           </button>
         </div>
       </div>
 
+      {/* Nuevo botón Sleep */}
+      <button
+        onClick={() => handleAction("sleep", onSleep)}
+        disabled={activeButton !== null}
+        className="mt-2 px-5 py-2 rounded-lg bg-blue-700 text-white font-bold pixel-font text-xs
+          shadow-[inset_0_1px_2px_rgba(255,255,255,0.5),0_2px_0_rgba(0,0,0,0.5)] hover:brightness-110 flex items-center gap-2"
+      >
+        <Moon className="w-4 h-4" />
+        SLEEP
+      </button>
+
       {/* Start y Reset */}
       <div className="flex gap-6 mt-3">
         <button
           onClick={() => handleAction("start", onStart)}
-          className="px-5 py-1 bg-gray-400 hover:bg-gray-500 rounded text-black text-xs font-bold"
+          className="px-5 py-1 rounded-lg bg-gray-400 shadow-[inset_0_1px_2px_rgba(255,255,255,0.5),0_2px_0_rgba(0,0,0,0.5)] hover:brightness-110 text-black text-xs font-bold pixel-font"
         >
           START
         </button>
 
         <button
           onClick={onReset}
-          className="flex items-center gap-1 text-gray-500 hover:text-gray-700 text-xs"
+          className="flex items-center gap-1 text-gray-500 hover:text-gray-700 text-xs pixel-font"
         >
           <RefreshCw className="w-4 h-4" />
           Reiniciar

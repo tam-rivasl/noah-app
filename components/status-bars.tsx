@@ -11,11 +11,12 @@ export default function StatusBars({ noaState }: StatusBarsProps) {
   const { hunger, happiness, energy } = noaState;
 
   return (
-    <div className="w-full px-2 space-y-1">
-      {/* Pasa el tipo correcto aquí */}
-      <PixelStatusBar value={hunger} maxValue={100} type="hunger" label="Hambre" />
-      <PixelStatusBar value={happiness} maxValue={100} type="happiness" label="Felicidad" />
-      <PixelStatusBar value={energy} maxValue={100} type="energy" label="Energía" />
+    <div className="w-full flex flex-col items-center justify-center gap-1 p-2">
+      <div className="flex gap-2 w-full justify-center">
+        <PixelStatusBar value={hunger} maxValue={100} type="hunger" />
+        <PixelStatusBar value={happiness} maxValue={100} type="happiness" />
+        <PixelStatusBar value={energy} maxValue={100} type="energy" />
+      </div>
     </div>
   );
 }
