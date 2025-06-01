@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import StatusBars from "./status-bars";
 import ActionButtons from "./action-buttons";
-import MiniGameCatch from "./mini-game";
+import MiniGameCatch from "./mini-game-catch";
 import MiniGameSpace from "./mini-game-space";
 import NoaWalking from "./noa-walking";
 import NoaEating from "./noa-eating";
@@ -29,7 +29,7 @@ export default function NoaTamagotchi() {
   useEffect(() => { setMounted(true); }, []);
 
   const [noaState, setNoaState] = useState<NoaState>(initialState);
-  const [currentAction, setCurrentAction] = useState<"eating" | "petting" | "sleeping" | null>(null);
+  const [currentAction, setCurrentAction] = useState<"eating" | "petting" | "sleeping" | "gaming"| null>(null);
   const [isSleeping, setIsSleeping] = useState(false);
   const [screen, setScreen] = useState<Screen>("start");
   const [moveCommand, setMoveCommand] = useState<"left" | "right" | "up" | "down" | null>(null);
@@ -115,18 +115,18 @@ export default function NoaTamagotchi() {
     }
     return () => clearInterval(id);
   }, [isSleeping]);
- 
+
   useEffect(() => {
     if (noaState.energy === 0 && !isSleeping) {
       toggleSleep();
     }
   }, [noaState.energy, isSleeping]);
-  
+
   // Actions
   const feedNoa = () => {
     if (isSleeping) return;
     setCurrentAction("eating");
-    setNoaState(p => ({ ...p, hunger: Math.min(p.hunger + 20, 100), energy: Math.min(p.energy + 5, 100) }));
+    setNoaState(p => ({ ...p, hunger: Math.min(p.hunger + 20, 100) }));
   };
   const petNoa = () => {
     if (isSleeping) return;
@@ -137,6 +137,15 @@ export default function NoaTamagotchi() {
     setIsSleeping(s => !s);
     setCurrentAction(s => s ? null : "sleeping");
   };
+
+  const gaming = () => {
+    if (isSleeping) return;
+    if(menuOptions[selectedMenuIndex]){
+      setCurrentAction("gaming");
+      setNoaState(p => ({ ...p, happiness: Math.min(p.happiness + 10, 100), energy: Math.min(p.energy + 40, 100) }));
+    }
+  };
+  
   useEffect(() => {
     if (currentAction) {
       const to = setTimeout(() => setCurrentAction(null), 2000);
@@ -147,8 +156,11 @@ export default function NoaTamagotchi() {
   // Navigation
   const handleStart = () => setScreen(prev => prev === "start" ? "main" : "menu");
   const handleBack = () => setScreen(prev => prev === "menu" ? "main" : "menu");
-  const startSelectedGame = () => setScreen(menuOptions[selectedMenuIndex]);
-  const handleMove = (dir: "left" | "right" | "up" | "down") => {
+  const startSelectedGame = () => {
+    gaming(); // Aumenta felicidad y energía al comenzar
+    setScreen(menuOptions[selectedMenuIndex]); // Cambia de pantalla al minijuego
+  };
+    const handleMove = (dir: "left" | "right" | "up" | "down") => {
     if (screen === "menu") {
       setSelectedMenuIndex(i =>
         dir === "left"
@@ -183,15 +195,16 @@ export default function NoaTamagotchi() {
 
             {/* Top HUD: Clock + StatusBars */}
             {mounted && (
-              <div className="absolute top-2 left-2 right-2 flex flex-col items-end gap-2 z-20">
+              <div className="absolute top-1 left-1 right-1 flex flex-col items-end  z-20">
                 {/* StatusBars */}
                 <div className="w-full flex justify-center">
                   <StatusBars noaState={noaState} />
                 </div>
-                {/* Clock */}
-                <div className="pixel-font text-white bg-black/50 px-2 py-1 rounded">
+                {/* Pixel Art Clock */}
+                <div className="pixel-font text-xs text-white bg-black px-1 py-0.5 rounded border border-white shadow-[2px_2px_0_#444]">
                   {time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </div>
+
               </div>
             )}
 
@@ -229,7 +242,7 @@ export default function NoaTamagotchi() {
                   onClick={() => setScreen(opt)}
                   className={`px-4 py-2 text-sm rounded ${selectedMenuIndex === idx ? 'bg-white text-black' : 'bg-black/30'}`}
                 >
-                  {opt === 'catch' ? '🥎 Atrapa' : '☄️ Meteoritos'}
+                  {opt === 'catch' ? 'Saltin rebotin' : '☄️ Meteoritos'}
                 </button>
               ))}
             </div>

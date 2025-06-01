@@ -109,10 +109,9 @@ export default function ActionButtons({
 
         <button
           onClick={onReset}
-          className="flex items-center gap-1 text-gray-500 hover:text-gray-700 text-xs pixel-font"
+          className="px-5 py-1 rounded-lg bg-gray-400 shadow-[inset_0_1px_2px_rgba(255,255,255,0.5),0_2px_0_rgba(0,0,0,0.5)] hover:brightness-110 text-black text-xs font-bold pixel-font"
         >
-          <RefreshCw className="w-4 h-4" />
-          Reiniciar
+          Reset
         </button>
       </div>
     </div>
