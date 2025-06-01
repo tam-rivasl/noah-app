@@ -2,51 +2,47 @@
 
 import React, { useState, useEffect, useRef } from "react";
 
-interface MiniGameJumpProps {
+interface MiniGameCatchProps {
   onExit: () => void;
+  moveCommand: "left" | "right" | "up" | "down" | null;
 }
 
 interface Obstacle {
   id: number;
   type: "ball" | "bone";
   x: number;
-  size: number; // escala (p. ej. 0.8, 1, 1.2)
+  size: number; // escala (0.8, 1, 1.2)
 }
 
-export default function MiniGameJump({ onExit }: MiniGameJumpProps) {
+export default function MiniGameCatch({ onExit, moveCommand }: MiniGameCatchProps) {
   // Dimensiones del canvas
   const canvasWidth = 300;
-  const canvasHeight = 250;
+  // Elevación del “suelo” dentro del contenedor
+  const groundOffset = 10;
 
-  // Estados principales
+  // --- Estados principales ---
   const [gameOver, setGameOver] = useState(false);
   const [score, setScore] = useState(0);
   const [obstacles, setObstacles] = useState<Obstacle[]>([]);
-  const [noaY, setNoaY] = useState(0);         // altura actual de Noa (0 = suelo)
-  const [isJumping, setIsJumping] = useState(false);
-  const [jumpElapsed, setJumpElapsed] = useState(0); // tiempo transcurrido desde que empezó el salto
-  const [noaSize, setNoaSize] = useState(1);   // escala de Noa (1 = normal)
+  const [noaX, setNoaX] = useState(50);           // posición horizontal de Noa
+  const [noaY, setNoaY] = useState(groundOffset); // altura inferior de Noa
+  const [noaSize, setNoaSize] = useState(1);      // escala de Noa (1 = normal)
   const [buffActive, setBuffActive] = useState(false);
 
-  // Refs para tiempos y temporizadores
+  // Refs para tiempos y contadores
   const startTime = useRef<number>(Date.now());
   const lastTime = useRef<number>(Date.now());
-  const jumpStartTime = useRef<number | null>(null);
-
   const spawnBallTimer = useRef<number>(0);
   const spawnBoneTimer = useRef<number>(0);
-
   const bonesCollected = useRef<number>(0);
 
   // Parámetros del salto
-  const upDuration = 200;    // ms de subida
-  const downDuration = 400;  // ms de bajada
-  const jumpHeight = 80;     // px máximo
+  const jumpHeight = 80; // px adicionales sobre groundOffset
 
-  // Intervalo principal de juego (~20 FPS)
+  // Bucle principal de juego (~20 FPS)
   const gameInterval = useRef<NodeJS.Timeout | null>(null);
 
-  // Función para iniciar el buff de tamaño tras recoger un hueso
+  // Función para activar el buff de tamaño al recoger un hueso
   const triggerBuff = () => {
     if (buffActive) return;
     setBuffActive(true);
@@ -63,28 +59,23 @@ export default function MiniGameJump({ onExit }: MiniGameJumpProps) {
     }, duration);
   };
 
-  // Bucle de actualización de juego
+  // Bucle de actualización de todo el juego
   const gameLoop = () => {
     const now = Date.now();
     const delta = now - lastTime.current;
     lastTime.current = now;
 
-    if (gameOver) {
-      return;
-    }
+    if (gameOver) return;
 
-    // Tiempo transcurrido desde el inicio
     const elapsed = now - startTime.current;
 
-    // --- 1. Calcular velocidad en px/ms ---
-    // velocidad base: 0.15 px/ms (150 px/s). Cada 10s +0.025 px/ms.
+    // 1) calcular velocidad en px/ms (150 px/s + 25 px/s cada 10s, máximo 400 px/s)
     const baseSpeed = 0.15 + 0.025 * Math.floor(elapsed / 10000);
-    const speed = Math.min(baseSpeed, 0.4); // máximo 0.4 px/ms (400 px/s)
-    const dx = speed * delta; // px a desplazar en este tick
+    const speed = Math.min(baseSpeed, 0.4);
+    const dx = speed * delta; // px a desplazar en esta iteración
 
-    // --- 2. Generar pelotas ---
+    // 2) generar pelotas (cada 1.0–1.5 s, disminuye 50 ms cada 10s, mínimo 1000 ms)
     spawnBallTimer.current += delta;
-    // intervalo de balón: inicia en 1500 ms y cada 10s se reduce 50 ms, mínimo 1000 ms
     const ballInterval = Math.max(1500 - 50 * Math.floor(elapsed / 10000), 1000);
     if (spawnBallTimer.current >= ballInterval) {
       spawnBallTimer.current -= ballInterval;
@@ -95,9 +86,8 @@ export default function MiniGameJump({ onExit }: MiniGameJumpProps) {
       ]);
     }
 
-    // --- 3. Generar huesos ---
+    // 3) generar huesos (cada 4000 ms)
     spawnBoneTimer.current += delta;
-    // intervalo hueso: entre 4000 y 6000 ms
     if (spawnBoneTimer.current >= 4000) {
       spawnBoneTimer.current = 0;
       setObstacles((prev) => [
@@ -106,58 +96,48 @@ export default function MiniGameJump({ onExit }: MiniGameJumpProps) {
       ]);
     }
 
-    // --- 4. Actualizar posición de obstáculos y filtrar fuera de pantalla ---
+    // 4) mover obstáculos y filtrar los que salen por la izquierda
     setObstacles((prev) =>
       prev
         .map((o) => ({ ...o, x: o.x - dx }))
-        .filter((o) => o.x > -32) // si sale por la izquierda, se elimina
+        .filter((o) => o.x > -32)
     );
 
-    // --- 5. Actualizar salto de Noa ---
-    if (isJumping && jumpStartTime.current !== null) {
-      const jElapsed = now - jumpStartTime.current;
-      setJumpElapsed(jElapsed);
-
-      if (jElapsed < upDuration) {
-        // Fase de subida
-        const newY = (jElapsed / upDuration) * jumpHeight;
-        setNoaY(newY);
-      } else if (jElapsed < upDuration + downDuration) {
-        // Fase de bajada
-        const t = (jElapsed - upDuration) / downDuration;
-        const newY = (1 - t) * jumpHeight;
-        setNoaY(newY);
-      } else {
-        // Fin de salto
-        setNoaY(0);
-        setIsJumping(false);
-        jumpStartTime.current = null;
-        setJumpElapsed(0);
-      }
-    }
-
-    // --- 6. Detección de colisiones y recolección de huesos ---
+    // 5) detección de colisiones usando hitboxes reducidas (~60% del sprite)
     let collided = false;
-    const noaX = 50; // posición X fija de Noa
-    const noaW = 32 * noaSize;
-    const noaH = 32 * noaSize;
-    const noaYcurrent = noaY;
+    const noaSpriteW = 20 * noaSize;
+    const noaSpriteH = 20 * noaSize;
+    const noaW_eff = noaSpriteW * 0.6;
+    const noaH_eff = noaSpriteH * 0.6;
+    const noaCenterX = noaX + noaSpriteW / 2;
+    const noaCenterY = noaY + noaSpriteH / 2;
 
     setObstacles((prev) => {
       const filtered = prev.filter((o) => {
-        const oW = 32 * o.size;
-        const oH = 32 * o.size;
-        const oX = o.x;
-        const oY = 0;
+        const oSpriteW = 32 * o.size;
+        const oSpriteH = 32 * o.size;
+        const oW_eff = oSpriteW * 0.6;
+        const oH_eff = oSpriteH * 0.6;
+        const oCenterX = o.x + oSpriteW / 2;
+        const oCenterY = groundOffset + oSpriteH / 2;
 
-        const overlapX = !(oX + oW < noaX || oX > noaX + noaW);
-        const overlapY = !(oY + oH < noaYcurrent || oY > noaYcurrent + noaH);
+        // Distancia horizontal y vertical entre centros
+        const distX = Math.abs(noaCenterX - oCenterX);
+        const distY = Math.abs(noaCenterY - oCenterY);
 
-        if (overlapX && overlapY) {
+        // Suma de mitades de hitboxes efectivas
+        const sumHalfW = noaW_eff / 2 + oW_eff / 2;
+        const sumHalfH = noaH_eff / 2 + oH_eff / 2;
+
+        if (distX < sumHalfW && distY < sumHalfH) {
           if (o.type === "ball") {
-            // Colisiona con pelota → Game Over
-            collided = true;
-            return false;
+            // Colisión pelota solo si Noa está en suelo
+            if (noaY === groundOffset) {
+              collided = true;
+              return false;
+            }
+            collided= false
+            return true;
           } else {
             // Recoge hueso
             bonesCollected.current += 1;
@@ -174,14 +154,13 @@ export default function MiniGameJump({ onExit }: MiniGameJumpProps) {
       return filtered;
     });
 
-    // --- 7. Actualizar puntuación ---
-    // 1 punto por segundo sobrevivido + 20 por cada hueso
+    // 6) actualizar puntuación (1 punto/seg sobrevivido + 20 por cada hueso)
     const timePoints = Math.floor(elapsed / 1000);
     const totalScore = timePoints + bonesCollected.current * 20;
     setScore(totalScore);
   };
 
-  // Arrancar bucle de juego con setInterval
+  // Iniciar/limpiar bucle de juego con setInterval
   useEffect(() => {
     startTime.current = Date.now();
     lastTime.current = Date.now();
@@ -189,33 +168,45 @@ export default function MiniGameJump({ onExit }: MiniGameJumpProps) {
     return () => {
       if (gameInterval.current) clearInterval(gameInterval.current);
     };
-  }, [gameOver]); // si cambia gameOver, resetea el efecto (detiene el bucle)
+  }, [gameOver]);
 
-  // Manejar teclas (salto y salir al Game Over)
+  // --- FUNCION SALTO SIMPLIFICADO ---
+  const jump = () => {
+    if (gameOver) return;
+    // Si Noa ya está por encima de groundOffset, no saltar de nuevo
+    if (noaY > groundOffset) return;
+
+    // Subir: llevamos a Noa hasta groundOffset + jumpHeight
+    setNoaY(groundOffset + jumpHeight);
+
+    // Después de 500 ms, regresar al suelo (groundOffset)
+    setTimeout(() => {
+      setNoaY(groundOffset);
+    }, 500);
+  };
+
+  // --- D-Pad: mover a Noa y saltar ---
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (!gameOver) {
-        if (e.code === "ArrowUp" || e.code === "Space") {
-          // Iniciar salto si está en suelo
-          if (!isJumping) {
-            setIsJumping(true);
-            jumpStartTime.current = Date.now();
-          }
-        }
-      } else {
-        // Si Game Over y presiona B, sale
-        if (e.code === "KeyB") {
-          onExit();
-        }
-      }
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [gameOver, isJumping]);
+    if (!moveCommand || gameOver) return;
+
+    if (moveCommand === "left") {
+      setNoaX((x) => Math.max(x - 15, 0));
+    }
+    if (moveCommand === "right") {
+      setNoaX((x) => Math.min(x + 15, canvasWidth - 64 * noaSize));
+    }
+    if (moveCommand === "up") {
+      jump();
+    }
+
+    // Resetear el comando para que no persista
+    const event = new Event("resetMove");
+    window.dispatchEvent(event);
+  }, [moveCommand, gameOver, noaSize]);
 
   return (
     <div
-      className="relative w-[300px] h-[250px] bg-cover bg-center overflow-hidden border-2 border-black mx-auto"
+      className="relative w-[300px] h-[220px] bg-cover bg-center overflow-hidden mx-auto"
       style={{ backgroundImage: "url(/images/back-grounds/game-jump.png)" }}
     >
       {/* Puntaje */}
@@ -225,7 +216,10 @@ export default function MiniGameJump({ onExit }: MiniGameJumpProps) {
 
       {/* Obstáculos (pelotas y huesos) */}
       {obstacles.map((o) => {
-        const sprite = o.type === "ball" ? "/images/obstacles/ball.png" : "/images/obstacles/bone.png";
+        const sprite =
+          o.type === "ball"
+            ? "/images/obstacles/ball.png"
+            : "/images/obstacles/bone.png";
         return (
           <img
             key={o.id}
@@ -235,7 +229,7 @@ export default function MiniGameJump({ onExit }: MiniGameJumpProps) {
             style={{
               width: `${32 * o.size}px`,
               height: `${32 * o.size}px`,
-              bottom: 0,
+              bottom: `${groundOffset}px`,
               left: `${o.x}px`,
             }}
           />
@@ -246,19 +240,17 @@ export default function MiniGameJump({ onExit }: MiniGameJumpProps) {
       {!gameOver && (
         <img
           src={
-            isJumping
-              ? jumpElapsed < upDuration
-                ? "/images/spreeds/jumping/noa-saltando-1.png"
-                : "/imagesspreeds/jumping/noa-saltando-moviendo-la-cola.png"
+            noaY > groundOffset
+              ? "/images/spreeds/jumping/noa-saltando-1.png"
               : "/images/spreeds/jumping/noa-comienza-a-jugar.png"
           }
           alt="Noa"
           className="absolute transition-all"
           style={{
-            width: `${32 * noaSize}px`,
-            height: `${32 * noaSize}px`,
+            width: `${64 * noaSize}px`,
+            height: `${64 * noaSize}px`,
             bottom: `${noaY}px`,
-            left: "50px",
+            left: `${noaX}px`,
           }}
         />
       )}

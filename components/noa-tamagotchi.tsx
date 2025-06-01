@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import StatusBars from "./status-bars";
 import ActionButtons from "./action-buttons";
-import MiniGameCatch from "./mini-game-catch";
+import MiniGameJump from "./mini-game-catch";
 import MiniGameSpace from "./mini-game-space";
 import NoaWalking from "./noa-walking";
 import NoaEating from "./noa-eating";
@@ -22,7 +22,7 @@ const initialState: NoaState = {
   lastUpdated: Date.now(),
 };
 
-type Screen = "start" | "main" | "menu" | "catch" | "space";
+type Screen = "start" | "main" | "menu" | "jump" | "space";
 
 export default function NoaTamagotchi() {
   const [mounted, setMounted] = useState(false);
@@ -34,7 +34,7 @@ export default function NoaTamagotchi() {
   const [screen, setScreen] = useState<Screen>("start");
   const [moveCommand, setMoveCommand] = useState<"left" | "right" | "up" | "down" | null>(null);
   const [selectedMenuIndex, setSelectedMenuIndex] = useState(0);
-  const menuOptions: ("catch" | "space")[] = ["catch", "space"];
+  const menuOptions: ("jump" | "space")[] = ["jump", "space"];
 
   // Time & Background
   const [time, setTime] = useState(new Date());
@@ -242,14 +242,14 @@ export default function NoaTamagotchi() {
                   onClick={() => setScreen(opt)}
                   className={`px-4 py-2 text-sm rounded ${selectedMenuIndex === idx ? 'bg-white text-black' : 'bg-black/30'}`}
                 >
-                  {opt === 'catch' ? 'Saltin rebotin' : '☄️ Meteoritos'}
+                  {opt === 'jump' ? 'Saltin rebotin' : '☄️ Meteoritos'}
                 </button>
               ))}
             </div>
           </div>
         )}
 
-        {screen === "catch" && <MiniGameCatch onExit={handleBack} moveCommand={moveCommand} />}
+        {screen === "jump" && <MiniGameJump onExit={handleBack} moveCommand={moveCommand} />}
         {screen === "space" && <MiniGameSpace onExit={handleBack} moveCommand={moveCommand} />}
       </div>
 
@@ -265,7 +265,7 @@ export default function NoaTamagotchi() {
           onBack={handleBack}
           isSleeping={isSleeping}
           isStarting={screen === 'start'}
-          inMenu={['menu', 'catch', 'space'].includes(screen)}
+          inMenu={['menu', 'jump', 'space'].includes(screen)}
         />
       </div>
     </div>
