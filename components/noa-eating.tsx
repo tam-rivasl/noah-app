@@ -45,8 +45,8 @@ export default function NoaEating() {
         <Image
           src={frames[frameIndex]}
           alt="Noa comiendo"
-          width={80}
-          height={80}
+          width={70}
+          height={70}
           className="pixel-art"
         />
       </div>

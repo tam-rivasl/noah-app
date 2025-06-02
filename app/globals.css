@@ -22,8 +22,41 @@ body {
     image-rendering: -moz-crisp-edges;
     image-rendering: crisp-edges;
   }
+
   .screen-content {
     @apply flex flex-col items-center justify-center text-center text-white animate-fade-in;
+  }
+
+  /* ------------------------------------------------------------------------ */
+  /*  Aquí agregamos las animaciones para "NoaPetting" (cepillo + emotes)    */
+  /* ------------------------------------------------------------------------ */
+
+  /* Animación del cepillo (sube y baja ligeramente) */
+  @keyframes brushMove {
+    0%, 100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-4px);
+    }
+  }
+  .animate-brush {
+    animation: brushMove 0.6s ease-in-out infinite;
+  }
+
+  /* Animación de corazones/burbujas que flotan hacia arriba y desaparecen */
+  @keyframes petEmote {
+    0% {
+      transform: translateY(0) scale(1);
+      opacity: 1;
+    }
+    100% {
+      transform: translateY(-40px) scale(1.2);
+      opacity: 0;
+    }
+  }
+  .animate-pet-emote {
+    animation: petEmote 0.8s ease-out forwards;
   }
 }
 
@@ -83,7 +116,7 @@ body {
   }
 }
 
-/* ---------------- KEYFRAMES ANIMATIONS ---------------- */
+/* ---------------- KEYFRAMES ANIMATIONS GENERALES ---------------- */
 @keyframes damage-flash {
   0%, 100% { background-color: #f87171; }
   50% { background-color: #b91c1c; }
@@ -155,16 +188,7 @@ body {
   100% { transform: translate(0px, 0px); }
 }
 
-.animate-shake {
-  animation: shake-screen 0.5s infinite;
-}
-
-
 /* ---------------- ANIMATION CLASSES ---------------- */
-.animate-damage-flash {
-  animation: damage-flash 1s ease-in-out infinite;
-}
-
 .animate-shake {
   animation: shake 0.5s ease-in-out infinite;
 }
@@ -205,20 +229,16 @@ body {
   background-size: cover;
   z-index: -1;
 }
+
 /* ---------------- BUTTONS ---------------- */
 /* 🎮 Botones estilo Pixel Art Consola */
 .pixel-button {
   box-shadow: 2px 2px 0px #000;
   transition: transform 0.1s ease-in-out, box-shadow 0.1s ease-in-out;
 }
-
 .pixel-button:active {
   transform: translate(2px, 2px);
   box-shadow: 0px 0px 0px #000;
-}
-
-.pixel-font {
-  font-family: "Press Start 2P", monospace;
 }
 
 /* --- 🎮 GAMEBOY STYLING NUEVO 🎮 --- */
@@ -233,8 +253,8 @@ body {
   relative overflow-hidden 
   backdrop-blur-md 
   bg-opacity-90;
-  box-shadow: inset 0 4px 8px rgba(0, 0, 0, 0.6); /* sombra interior */
-  background-image: url('/images/back-grounds/texture4.png'); /* Asegúrate de mover la imagen a /public/images */
+  box-shadow: inset 0 4px 8px rgba(0, 0, 0, 0.6);
+  background-image: url('/images/back-grounds/texture4.png');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -243,7 +263,7 @@ body {
 .gameboy-top2 {
   width: 100%;
   height: 235px; /* Más altura para que se vea el logo */
-  background-image: url('/images/logo/background-logo.jpg'); /* aquí pon el path correcto */
+  background-image: url('/images/logo/background-logo.jpg'); /* ruta correcta */
   background-size: cover;
   background-position: center;
   display: flex;
@@ -255,12 +275,11 @@ body {
   font-family: 'Press Start 2P', monospace;
   font-size: 0.75rem;
   color: #fefefe;
-  margin-bottom: 32px; /* Antes estaba sin margen */
+  margin-bottom: 32px;
 }
 
-
 .gameboy-logo {
-  width: 100px; /* Ajusta a tu preferencia */
+  width: 100px;
   height: 60px;
   object-fit: contain;
 }
@@ -276,6 +295,3 @@ body {
 .gameboy-controls {
   @apply flex flex-col items-center gap-2;
 }
-
-
-

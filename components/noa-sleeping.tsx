@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import Image from "next/image";
+import React, { useEffect, useState } from "react";
 
 export default function NoaSleeping() {
   const [frameIndex, setFrameIndex] = useState(0);
@@ -9,14 +8,20 @@ export default function NoaSleeping() {
 
   const frames = [
     "/images/spreeds/sleeping/noa-bostezando.png",   // Frame 0
-    "/images/spreeds/sleeping/noa-durmiendo-2.png",  // Frame 1
-    "/images/spreeds/sleeping/noa-durmiendo-3.png",  // Frame 2
-  ];
+    "/images/spreeds/sleeping/noa-durmiendo-2.png"];
 
   useEffect(() => {
+    console.log("Número de frames:", frames.length); // debería imprimir 3
+
+    // Cambia de frame cada segundo
     const interval = setInterval(() => {
-      setFrameIndex((prev) => (prev + 1) % frames.length);
-    }, 1000); // cambia cada 1 segundo
+      setFrameIndex((prev) => {
+        const next = (prev + 1) % frames.length;
+        console.log("Frame actual:", next, "→", frames[next]);
+        return next;
+      });
+    }, 1000);
+
     return () => clearInterval(interval);
   }, []);
 
@@ -24,9 +29,10 @@ export default function NoaSleeping() {
     const interval = setInterval(() => {
       setEmotes((prev) => [
         ...prev,
-        { id: Date.now(), left: Math.random() * 30 - 15 }, // Variación leve
+        { id: Date.now(), left: Math.random() * 30 - 15 },
       ]);
-    }, 1500); // cada 1.5s crea un 💤
+    }, 1500);
+
     return () => clearInterval(interval);
   }, []);
 
@@ -36,9 +42,7 @@ export default function NoaSleeping() {
 
   return (
     <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex justify-center items-end">
-      {/* Contenedor pequeño relativo */}
       <div className="relative w-[96px] h-[96px] flex justify-center items-end">
-        
         {/* Emotes 💤 flotando */}
         {emotes.map((emote) => (
           <div
@@ -51,13 +55,14 @@ export default function NoaSleeping() {
           </div>
         ))}
 
-        {/* Noa durmiendo (cambiando frames) */}
-        <Image
+        {/* Noa durmiendo: bucle de 3 imágenes */}
+        <img
           src={frames[frameIndex]}
           alt="Noa durmiendo"
-          width={96}
-          height={96}
+          width={80}
+          height={80}
           className="pixel-art z-10"
+          onError={() => console.error("No se pudo cargar:", frames[frameIndex])}
         />
       </div>
     </div>
