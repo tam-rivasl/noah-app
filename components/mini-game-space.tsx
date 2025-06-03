@@ -7,6 +7,7 @@ import ScoreBoard, { RecordEntry } from "./score-board";
 interface MiniGameSpaceProps {
   onExit: () => void;
   moveCommand: "left" | "right" | "up" | "down" | null;
+  startCommand: boolean;
 }
 
 interface Meteor {
@@ -30,7 +31,7 @@ const MAX_SPEED = 10;                    // px por tick
 const SPEED_INCREASE_INTERVAL = 10000;   // cada 10 s
 const SPAWN_DECREASE_AMOUNT = 150;       // cada 10 s se reduce 150 ms
 
-export default function MiniGameSpace({ onExit, moveCommand }: MiniGameSpaceProps) {
+export default function MiniGameSpace({ onExit, moveCommand, startCommand }: MiniGameSpaceProps) {
   const [started, setStarted] = useState(false);
   const [meteors, setMeteors] = useState<Meteor[]>([]);
   // Iniciamos a Noa centrado horizontalmente
@@ -78,7 +79,7 @@ export default function MiniGameSpace({ onExit, moveCommand }: MiniGameSpaceProp
   // ——— Instrucciones para “typewriter” ———
   const instructions = [
     "– Mueve a Noa con ← / →.",
-    "– Presiona ▲ (UP) para iniciar.",
+    "– Presiona START para iniciar.",
     "– Cada 10 s: meteoros más frecuentes y rápidos.",
     "– Sobrevive el mayor tiempo posible.",
   ];
@@ -124,12 +125,16 @@ export default function MiniGameSpace({ onExit, moveCommand }: MiniGameSpaceProp
     spawnIntervalRef.current = INITIAL_SPAWN_INTERVAL;
   }, []);
 
-  // ——— Listener de teclado: UP inicia, B sale si GameOver ———
+  // ——— Iniciar juego con el botón Start ———
+  useEffect(() => {
+    if (!started && currentLine >= instructions.length && startCommand) {
+      handleStart();
+    }
+  }, [startCommand, started, currentLine, instructions.length, handleStart]);
+
+  // ——— Listener de teclado: B sale si GameOver ———
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (!started && currentLine >= instructions.length && e.key === "ArrowUp") {
-        handleStart();
-      }
       if (gameOver && e.key.toLowerCase() === "b") {
         onExit();
       }
@@ -138,15 +143,9 @@ export default function MiniGameSpace({ onExit, moveCommand }: MiniGameSpaceProp
     return () => window.removeEventListener("keydown", onKey);
   }, [started, gameOver, handleStart, onExit, currentLine, instructions.length]);
 
-  // ——— D-Pad: UP inicia o mueve lateralmente ———
+  // ——— D-Pad: mueve lateralmente ———
   useEffect(() => {
     if (!moveCommand) return;
-
-    if (!started && currentLine >= instructions.length && moveCommand === "up") {
-      handleStart();
-      window.dispatchEvent(new Event("resetMove"));
-      return;
-    }
     if (started && !gameOver) {
       if (moveCommand === "left") {
         setPlayerX((x) => Math.max(x - 20, 0));
@@ -155,7 +154,7 @@ export default function MiniGameSpace({ onExit, moveCommand }: MiniGameSpaceProp
       }
       window.dispatchEvent(new Event("resetMove"));
     }
-  }, [moveCommand, started, gameOver, handleStart, currentLine, instructions.length]);
+  }, [moveCommand, started, gameOver]);
 
   // ——— Ajustar dificultad cada segundo ———
   useEffect(() => {
@@ -260,7 +259,7 @@ export default function MiniGameSpace({ onExit, moveCommand }: MiniGameSpaceProp
           ))}
         </div>
         {currentLine >= instructions.length && (
-          <p className="text-[8px] mt-3">Presiona ▲ para comenzar</p>
+          <p className="text-[8px] mt-3">Presiona START para comenzar</p>
         )}
       </div>
     );

@@ -6,6 +6,7 @@ import ScoreBoard, { RecordEntry } from "./score-board";
 interface MiniGameCatchProps {
   onExit: () => void;
   moveCommand: "left" | "right" | "up" | "down" | null;
+  startCommand: boolean;
 }
 
 interface Obstacle {
@@ -39,7 +40,7 @@ const JUMP_SPRITES = [
   "/images/spreeds/jumping/noa-saltando-moviendo-la-cola.png",
 ];
 
-export default function MiniGameCatch({ onExit, moveCommand }: MiniGameCatchProps) {
+export default function MiniGameCatch({ onExit, moveCommand, startCommand }: MiniGameCatchProps) {
   // -------------- Estados de lógica del juego --------------
   const [started, setStarted] = useState(false);
   const [noaX, setNoaX] = useState(50);
@@ -120,16 +121,16 @@ export default function MiniGameCatch({ onExit, moveCommand }: MiniGameCatchProp
     };
   }, [noaY, started, gameOver, landingGrace]);
 
+  // -------------- Iniciar juego con el botón Start --------------
+  useEffect(() => {
+    if (!started && currentLine >= instructions.length && startCommand) {
+      setStarted(true);
+    }
+  }, [startCommand, started, currentLine, instructions.length]);
+
   // -------------- Manejo de D-Pad --------------
   useEffect(() => {
     if (!moveCommand) return;
-
-    if (!started && moveCommand === "up") {
-      // En pantalla de instrucciones, pulsar ▲ inicia el juego
-      setStarted(true);
-      window.dispatchEvent(new Event("resetMove"));
-      return;
-    }
 
     if (started && !gameOver) {
       if (moveCommand === "left") {
@@ -345,7 +346,7 @@ export default function MiniGameCatch({ onExit, moveCommand }: MiniGameCatchProp
           ))}
         </div>
         {currentLine >= instructions.length && (
-          <p className="text-[8px] mt-3">Presiona ▲ para comenzar</p>
+          <p className="text-[8px] mt-3">Presiona START para comenzar</p>
         )}
       </div>
     );
