@@ -22,7 +22,7 @@ export default function ScoreBoard({ records, onClose, onReset }: ScoreBoardProp
       <div className="relative bg-black/70 border border-white p-2 rounded w-60 text-[10px]">
         <h2 className="text-center text-sm mb-2 font-bold">Top 10 Score</h2>
         {/* Headers */}
-        <div className="grid grid-cols-[1.4rem_auto_auto_auto] bg-white/20 px-1 py-0.5 rounded font-semibold mb-1">
+        <div className="grid grid-cols-[1.4rem_auto_auto_auto] gap-x-2 bg-white/20 px-2 py-1 rounded font-semibold mb-1">
           <span className="text-center">#</span>
           <span>Fecha</span>
           <span>Tiempo</span>
@@ -32,14 +32,19 @@ export default function ScoreBoard({ records, onClose, onReset }: ScoreBoardProp
           {records.map((r, idx) => (
             <div
               key={idx}
-              className="grid grid-cols-[1.4rem_auto_auto_auto] items-center border-t border-white/30 px-1 py-0.5"
+              data-testid="score-row"
+              className="grid grid-cols-[1.4rem_auto_auto_auto] gap-x-2 items-center border-t border-white/30 px-2 py-1"
             >
-              <span className="flex items-center">
-                {idx + 1}° <span className="ml-1">⭐</span>
+              <span className="flex items-center whitespace-nowrap">
+                {idx + 1}°
+                {idx === 0 && <span className="ml-1">👑</span>}
+                {(idx === 1 || idx === 2) && idx !== 0 && (
+                  <span className="ml-1">⭐</span>
+                )}
               </span>
-              <span>{r.date}</span>
-              <span>{r.time}</span>
-              <span>{r.score}</span>
+              <span className="whitespace-nowrap">{r.date}</span>
+              <span className="whitespace-nowrap">{r.time}</span>
+              <span className="whitespace-nowrap">{r.score}</span>
             </div>
           ))}
         </div>
