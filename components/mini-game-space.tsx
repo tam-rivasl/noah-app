@@ -17,7 +17,7 @@ interface Meteor {
 
 // ——— Ahora el canvas mide 300×260 px ———
 const CANVAS_WIDTH = 200;
-const CANVAS_HEIGHT = 220;
+const CANVAS_HEIGHT = 200;
 const PLAYER_WIDTH = 40;
 const PLAYER_HEIGHT = 40;
 
@@ -42,7 +42,48 @@ export default function MiniGameSpace({ onExit, moveCommand }: MiniGameSpaceProp
   const spawnIntervalRef = useRef(INITIAL_SPAWN_INTERVAL);
   const spawnTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // ——— Arranca el juego: reinicia tiempo y dificulta-dor ———
+  // ——— Instrucciones para “typewriter” ———
+  const instructions = [
+    "– Mueve a Noa con ← / →.",
+    "– Presiona ▲ (UP) para iniciar.",
+    "– Cada 10 s: meteoros más frecuentes y rápidos.",
+    "– Sobrevive el mayor tiempo posible.",
+  ];
+  const [currentLine, setCurrentLine] = useState(0);
+  const [currentChar, setCurrentChar] = useState(0);
+  const [revealedLines, setRevealedLines] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (started) return;
+
+    // Si ya mostramos todas las líneas, no hacer nada
+    if (currentLine >= instructions.length) return;
+
+    const lineText = instructions[currentLine];
+    if (currentChar < lineText.length) {
+      // Mostrar siguiente carácter
+      const timer = setTimeout(() => {
+        const nextPortion = lineText.slice(0, currentChar + 1);
+        setRevealedLines((prev) => {
+          const copy = [...prev];
+          copy[currentLine] = nextPortion;
+          return copy;
+        });
+        setCurrentChar((c) => c + 1);
+      }, 50);
+      return () => clearTimeout(timer);
+    } else {
+      // Línea completa → pasar a la siguiente tras breve pausa
+      const timer = setTimeout(() => {
+        setCurrentLine((l) => l + 1);
+        setCurrentChar(0);
+        setRevealedLines((prev) => [...prev, ""]);
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [currentLine, currentChar, instructions, started]);
+
+  // ——— Función que arranca el juego ———
   const handleStart = useCallback(() => {
     setStarted(true);
     startRef.current = Date.now();
@@ -50,10 +91,10 @@ export default function MiniGameSpace({ onExit, moveCommand }: MiniGameSpaceProp
     spawnIntervalRef.current = INITIAL_SPAWN_INTERVAL;
   }, []);
 
-  // ——— ESCUCHA teclado: UP = iniciar, B = salir en GameOver ———
+  // ——— Listener de teclado: UP inicia, B sale si GameOver ———
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (!started && e.key === "ArrowUp") {
+      if (!started && currentLine >= instructions.length && e.key === "ArrowUp") {
         handleStart();
       }
       if (gameOver && e.key.toLowerCase() === "b") {
@@ -62,13 +103,13 @@ export default function MiniGameSpace({ onExit, moveCommand }: MiniGameSpaceProp
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [started, gameOver, handleStart, onExit]);
+  }, [started, gameOver, handleStart, onExit, currentLine, instructions.length]);
 
-  // ——— D-Pad: arrancar con UP o mover izquierda/derecha ———
+  // ——— D-Pad: UP inicia o mueve lateralmente ———
   useEffect(() => {
     if (!moveCommand) return;
 
-    if (!started && moveCommand === "up") {
+    if (!started && currentLine >= instructions.length && moveCommand === "up") {
       handleStart();
       window.dispatchEvent(new Event("resetMove"));
       return;
@@ -81,7 +122,7 @@ export default function MiniGameSpace({ onExit, moveCommand }: MiniGameSpaceProp
       }
       window.dispatchEvent(new Event("resetMove"));
     }
-  }, [moveCommand, started, gameOver, handleStart]);
+  }, [moveCommand, started, gameOver, handleStart, currentLine, instructions.length]);
 
   // ——— Ajustar dificultad cada segundo ———
   useEffect(() => {
@@ -120,7 +161,7 @@ export default function MiniGameSpace({ onExit, moveCommand }: MiniGameSpaceProp
   useEffect(() => {
     if (!started) return;
 
-    // Arrancamos la cadena de aparición de meteoros
+    // Iniciar cadena de meteoros
     scheduleNextMeteor();
 
     const loop = setInterval(() => {
@@ -131,18 +172,18 @@ export default function MiniGameSpace({ onExit, moveCommand }: MiniGameSpaceProp
         prev.forEach((m) => {
           const newY = m.y + speedRef.current;
           if (newY > CANVAS_HEIGHT) {
-            // Meteorito fuera de pantalla; lo descartamos
+            // Fuera de pantalla → descartar
             return;
           }
 
-          // ——— Hitbox de Noa con 20 % de margen horizontal ———
-          const SHRINK_FACTOR = 0.2;
-          const playerLeft   = playerX + PLAYER_WIDTH * (SHRINK_FACTOR / 2);
-          const playerRight  = playerX + PLAYER_WIDTH * (1 - SHRINK_FACTOR / 2);
+          // Hitbox de Noa con 20% de margin horizontal
+          const SHRINK = 0.2;
+          const playerLeft   = playerX + PLAYER_WIDTH * (SHRINK / 2);
+          const playerRight  = playerX + PLAYER_WIDTH * (1 - SHRINK / 2);
           const playerTop    = CANVAS_HEIGHT - PLAYER_HEIGHT - 10;
           const playerBottom = playerTop + PLAYER_HEIGHT;
 
-          // ——— Hitbox del meteorito ———
+          // Hitbox del meteoro
           const meteorLeft   = m.x;
           const meteorRight  = m.x + m.size;
           const meteorTop    = newY;
@@ -153,14 +194,14 @@ export default function MiniGameSpace({ onExit, moveCommand }: MiniGameSpaceProp
 
           if (overlapX && overlapY) {
             collided = true;
-            return; // sale de este forEach
+            return;
           }
           next.push({ ...m, y: newY });
         });
 
         if (collided) {
           setGameOver(true);
-          return prev; // devolvemos el array anterior para “congelar” todos
+          return prev; // “congelar” la última posición
         }
         return next;
       });
@@ -168,9 +209,7 @@ export default function MiniGameSpace({ onExit, moveCommand }: MiniGameSpaceProp
 
     return () => {
       clearInterval(loop);
-      if (spawnTimerRef.current) {
-        clearTimeout(spawnTimerRef.current);
-      }
+      if (spawnTimerRef.current) clearTimeout(spawnTimerRef.current);
     };
   }, [started, playerX, scheduleNextMeteor]);
 
@@ -182,11 +221,14 @@ export default function MiniGameSpace({ onExit, moveCommand }: MiniGameSpaceProp
         style={{ backdropFilter: "blur(2px)" }}
       >
         <h2 className="text-sm font-bold mb-2">INSTRUCCIONES</h2>
-        <p className="text-[10px] mb-1">– Usa ← / → para mover a Noa.</p>
-        <p className="text-[10px] mb-1">– Presiona ▲ (UP) para iniciar.</p>
-        <p className="text-[10px] mb-1">– Cada 10 s los meteoros serán más frecuentes y rápidos.</p>
-        <p className="text-[10px] mb-3">– Sobrevive el mayor tiempo posible.</p>
-        <p className="text-[8px]">Pulsa ▲ para comenzar</p>
+        <div className="space-y-1 text-[10px]">
+          {revealedLines.map((line, idx) => (
+            <p key={idx}>{line}</p>
+          ))}
+        </div>
+        {currentLine >= instructions.length && (
+          <p className="text-[8px] mt-3">Presiona ▲ para comenzar</p>
+        )}
       </div>
     );
   }
@@ -194,7 +236,7 @@ export default function MiniGameSpace({ onExit, moveCommand }: MiniGameSpaceProp
   // ——— Render principal del juego ———
   return (
     <div
-      className="relative w-[300px] h-[260px] bg-cover bg-center overflow-hidden mx-auto"
+      className="relative w-[300px] h-[220px] bg-cover bg-center overflow-hidden mx-auto"
       style={{
         backgroundImage: "url(/images/space-game/background-mini-game-space.jpg)",
       }}

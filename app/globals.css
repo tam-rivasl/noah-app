@@ -59,6 +59,19 @@ body {
     animation: petEmote 0.8s ease-out forwards;
   }
 }
+/* Ejemplo de CSS para el zumbido (añade en tu archivo global de estilos) */
+
+@keyframes zumbido {
+  0%, 100%   { transform: translateX(0); }
+  10%,  30%  { transform: translateX(-4px); }
+  20%,  40%  { transform: translateX(4px); }
+  50%,  70%  { transform: translateX(-2px); }
+  60%,  80%  { transform: translateX(2px); }
+}
+
+.animate-zumbido {
+  animation: zumbido 0.8s ease-in-out infinite;
+}
 
 /* ---------------- BASE VARIABLES ---------------- */
 @layer base {

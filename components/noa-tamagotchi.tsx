@@ -28,25 +28,18 @@ const initialState: NoaState = {
 
 export default function NoaTamagotchi() {
   const [noaState, setNoaState] = useState<NoaState>(initialState);
-  const [currentAction, setCurrentAction] = useState<
-    "eating" | "petting" | "gaming" | null
-  >(null);
+  const [currentAction, setCurrentAction] = useState<"eating" | "petting" | "gaming" | null>(null);
   const [isSleeping, setIsSleeping] = useState(false);
-  const [screen, setScreen] = useState<
-    "start" | "main" | "menu" | "catch" | "space"
-  >("start");
-  const [moveCommand, setMoveCommand] = useState<
-    "left" | "right" | "up" | "down" | null
-  >(null);
+  const [screen, setScreen] = useState<"start" | "main" | "menu" | "catch" | "space">("start");
+  const [moveCommand, setMoveCommand] = useState<"left" | "right" | "up" | "down" | null>(null);
   const [selectedMenuIndex, setSelectedMenuIndex] = useState(0);
   const menuOptions: ("catch" | "space")[] = ["catch", "space"];
   const [time, setTime] = useState(new Date());
-  const [backgroundImage, setBackgroundImage] = useState<string>(
-    "/images/back-grounds/day.png"
-  );
-  // Indica si estamos jugando un mini‐juego
+  const [backgroundImage, setBackgroundImage] = useState<string>("/images/back-grounds/day.png");
+  const [noaDead, setNoaDead] = useState(false);
+
   // —————————————————————————————————————————————————
-  // 1) Cargar/recuperar estado guardado de Noa
+  // 1) Cargar estado guardado
   useEffect(() => {
     const saved = localStorage.getItem("noaState");
     if (saved) {
@@ -63,12 +56,9 @@ export default function NoaTamagotchi() {
     }
   }, []);
 
-  // 2) Guardar estado en localStorage
+  // 2) Guardar estado al cambiar
   useEffect(() => {
-    localStorage.setItem(
-      "noaState",
-      JSON.stringify({ ...noaState, lastUpdated: Date.now() })
-    );
+    localStorage.setItem("noaState", JSON.stringify({ ...noaState, lastUpdated: Date.now() }));
   }, [noaState]);
 
   // 3) Decaimiento de stats cada minuto
@@ -93,7 +83,7 @@ export default function NoaTamagotchi() {
     return () => clearInterval(id);
   }, []);
 
-  // 5) Lógica de fondo (día/tarde/noche) y forzar noche si Noa duerme
+  // 5) Fondo día/tarde/noche y forzar noche si duerme
   useEffect(() => {
     if (isSleeping) {
       setBackgroundImage("/images/back-grounds/night.png");
@@ -123,7 +113,7 @@ export default function NoaTamagotchi() {
     return () => clearInterval(id);
   }, [isSleeping]);
 
-  // 7) Despertar solo cuando llegue a 100 de energía
+  // 7) Despertar cuando llegue a 100 de energía
   useEffect(() => {
     if (isSleeping && noaState.energy >= 100) {
       setIsSleeping(false);
@@ -131,70 +121,100 @@ export default function NoaTamagotchi() {
     }
   }, [noaState.energy, isSleeping]);
 
-  // 8) Si energía llega a 0 y Noa no está durmiendo, forzar a dormir
+
+
+  // 9) Morir si toda las stat llegan a  0
   useEffect(() => {
-    if (noaState.energy === 0 && !isSleeping) {
-      setIsSleeping(true);
+    if (noaState.hunger === 0 && noaState.happiness === 0 && noaState.energy === 0) {
+      setNoaDead(true);
       setCurrentAction(null);
+      setIsSleeping(false);
+      if (screen === "catch" || screen === "space") {
+        setScreen("main");
+      }
     }
-  }, [noaState.energy, isSleeping]);
+  }, [noaState.hunger, noaState.happiness, noaState.energy, screen]);
 
   // —————————————————————————————————————————————————
-  // Acciones básicas (alimentar, acariciar, etc.)
+  // Acciones básicas
   const feedNoa = () => {
-    if (isSleeping) return;
+    if (isSleeping || noaDead) return;
     setCurrentAction("eating");
-    setNoaState((p) => ({ ...p, hunger: Math.min(p.hunger + 20, 100), energy: Math.min(p.energy + 10, 100), happiness: Math.min(p.happiness + 10, 100) }));
+    setNoaState((p) => ({
+      ...p,
+      hunger: Math.min(p.hunger + 20, 100),
+      energy: Math.min(p.energy + 10, 100),
+      happiness: Math.min(p.happiness + 10, 100),
+    }));
   };
+
   const petNoa = () => {
-    if (isSleeping) return;
+    if (isSleeping || noaDead) return;
     setCurrentAction("petting");
-    setNoaState((p) => ({ ...p, happiness: Math.min(p.happiness + 10, 100), energy: Math.min(p.energy - 10, 100) }));
+    setNoaState((p) => ({
+      ...p,
+      happiness: Math.min(p.happiness + 10, 100),
+      energy: Math.max(p.energy - 10, 0),
+    }));
   };
+
   const gaming = () => {
-    if (isSleeping) return;
-    if(menuOptions[selectedMenuIndex]){
+    if (isSleeping || noaDead) return;
+    if (menuOptions[selectedMenuIndex]) {
       setCurrentAction("gaming");
-      setNoaState(p => ({ ...p, happiness: Math.min(p.happiness + 10, 100), energy: Math.min(p.energy - 10, 100), hunger: Math.min(p.hunger - 10, 100) }));
+      setNoaState((p) => ({
+        ...p,
+        happiness: Math.min(p.happiness + 10, 100),
+        energy: Math.max(p.energy - 10, 0),
+        hunger: Math.max(p.hunger - 10, 0),
+      }));
     }
   };
 
-  // Limpiar acción después de 2 segundos (si no está durmiendo)
+  // Limpiar acción después de 2s (si no duerme ni está muerto)
   useEffect(() => {
-    if (currentAction && !isSleeping) {
+    if (currentAction && !isSleeping && !noaDead) {
       const timer = setTimeout(() => setCurrentAction(null), 2000);
       return () => clearTimeout(timer);
     }
-  }, [currentAction, isSleeping]);
+  }, [currentAction, isSleeping, noaDead]);
 
   // —————————————————————————————————————————————————
-  // D-PAD: controla el valor de `moveCommand`
-  // (luego lo pasaremos a los minijuegos)
-  const handleMove = (dir: "left" | "right" | "up" | "down") => {
+  // D-PAD
+  const handleMove = (dir: "left" | "right" | "up" | "down"): void => {
+    if (noaDead) return;
     setMoveCommand(dir);
     setTimeout(() => setMoveCommand(null), 100);
   };
 
   // —————————————————————————————————————————————————
-  // Navegación entre pantallas
+  // Cambiar pantalla “start” ↔ “main” ↔ “menu”
   const handleStart = () => {
-    setScreen((prev) => (prev === "start" ? "main" : "menu"));
+    if (noaDead) return;
+    // Si estamos en “start” → “main”, si en “main” → “menu”
+    if (screen === "start") {
+      setScreen("main");
+    } else if (screen === "main") {
+      setScreen("menu");
+    }
   };
+
   const handleBack = () => {
-    // Si estás en “menu”, vuelves a “main”
-    // Si estás en “catch” o “space” (un minijuego), vuelves a “menu”
+    if (noaDead) return;
     if (screen === "menu") {
       setScreen("main");
     } else if (screen === "catch" || screen === "space") {
       setScreen("menu");
     }
   };
+
+  // === iniciar el minijuego seleccionado
   const startSelectedGame = () => {
-    gaming(); // Aumenta felicidad y energía al comenzar
-    setScreen(menuOptions[selectedMenuIndex]); // Cambia de pantalla al minijuego
+    if (noaDead || isSleeping) return; // bloqueamos si duerme o está muerto
+    gaming(); // Aumenta stats al entrar
+    setScreen(menuOptions[selectedMenuIndex]);
   };
 
-  // Avanza en el menú (cambia índice)
   const changeMenuSelection = (dir: "left" | "right") => {
     setSelectedMenuIndex((i) =>
       dir === "left"
@@ -203,15 +223,16 @@ export default function NoaTamagotchi() {
     );
   };
 
-  // Estado emocional (no se usa aquí, pero puedes expandirlo)
+  // Estado emocional (sirve para alertas en 8 bit)
   const getEmotional = useCallback(() => {
     const { hunger, happiness, energy } = noaState;
-    if (isSleeping) return "sleeping";
     if (hunger < 20) return "hungry";
     if (energy < 20) return "tired";
     if (happiness < 20) return "sad";
     return "normal";
-  }, [noaState, isSleeping]);
+  }, [noaState]);
+
+  const emotion = getEmotional();
 
   return (
     <div className="gameboy">
@@ -233,26 +254,23 @@ export default function NoaTamagotchi() {
           backgroundPosition: "center",
         }}
       >
-        {/* === Pantalla de “Press Start” === */}
-        {screen === "start" && (
+        {/* === Press Start === */}
+        {screen === "start" && !noaDead && (
           <div className="gameboy-top2 flex flex-col items-center justify-end h-full">
-            <p className="press-start-text animate-blink">Press Start</p>
+            <p className="press-start-text animate-blink pixel-font">Press Start</p>
           </div>
         )}
 
-        {/* === Pantalla principal (Noa + HUD) === */}
-        {screen === "main" && (
+        {/* === Pantalla principal === */}
+        {screen === "main" && !noaDead && (
           <>
-            {/* Top HUD: StatusBars + Reloj */}
+            {/* HUD superior */}
             <div className="absolute top-1 left-1 right-1 flex flex-col items-end z-20">
               <div className="w-full flex justify-center">
                 <StatusBars noaState={noaState} />
               </div>
               <div className="pixel-font text-xs text-white bg-black px-1 py-0.5 rounded border border-white shadow-[2px_2px_0_#444]">
-                {time.toLocaleTimeString([], {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
+                {time.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
               </div>
             </div>
 
@@ -278,47 +296,83 @@ export default function NoaTamagotchi() {
                 )}
               </div>
             </div>
+
+            {/* === Alerta 8 bit según emoción === */}
+            {emotion !== "normal" && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/50 z-30">
+                <div
+                  className="pixel-font text-red-400 text-[10px] px-2 py-1 border border-red-400 rounded animate-shake"
+                  style={{ backgroundColor: "rgba(0,0,0,0.7)" }}
+                >
+                  {emotion === "hungry" && "¡Noah tiene HAMBRE! 🍖"}
+                  {emotion === "tired" && "¡Noah está CANSADO! 💤"}
+                  {emotion === "sad" && "¡Noah está TRISTE! 🤕"}
+                </div>
+              </div>
+            )}
           </>
         )}
 
-        {/* === Pantalla de menú de minijuegos === */}
-        {screen === "menu" && (
+        {/* === Menú de minijuegos === */}
+        {screen === "menu" && !noaDead && (
           <div
             className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center text-white pixel-font p-4"
             style={{ backdropFilter: "blur(2px)" }}
           >
-            <div className="flex flex-col items-center justify-center text-white h-full">
-              <h2 className="text-lg pixel-font mb-2">Juega con noah!</h2>
-              <div className="flex gap-4">
-                {menuOptions.map((opt, idx) => (
-                  <button
-                    key={opt}
-                    onClick={() => setScreen(opt)}
-                    className={`px-4 py-2 text-sm rounded ${
-                      selectedMenuIndex === idx
-                        ? "bg-white text-black"
-                        : "bg-black/30"
-                    }`}
-                  >
-                    {opt === "catch" ? "Saltin rebotin" : "☄️ Meteoritos"}
-                  </button>
-                ))}
+            {isSleeping ? (
+               <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/50 z-30">
+                <div
+                  className="pixel-font text-red-400 text-[10px] px-2 py-1 border border-red-400 rounded animate-shake"
+                  style={{ backgroundColor: "rgba(0,0,0,0.7)" }}
+                >
+                   <p className="pixel-font text-[12px]"> 💤 Noah está durmiendo… vuelve luego 💤</p>
+                </div>
               </div>
-              <p className="mt-2 text-xs pixel-font text-gray-200">
-                Usa ← → para cambiar y A para seleccionar
-              </p>
-            </div>
+            ) : (
+              <>
+                <h2 className="text-lg pixel-font mb-2">Juega con Noah!</h2>
+                <div className="flex gap-4 mb-2">
+                  {menuOptions.map((opt, idx) => (
+                    <button
+                      key={opt}
+                      onClick={() => setScreen(opt)}
+                      className={`px-4 py-2 text-sm rounded ${
+                        selectedMenuIndex === idx ? "bg-white text-black" : "bg-black/30"
+                      } pixel-font`}
+                    >
+                      {opt === "catch" ? "Saltin rebotin" : "☄️ Meteoritos"}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-xs pixel-font text-gray-200">
+                  Usa ← → para cambiar y A para seleccionar
+                </p>
+              </>
+            )}
           </div>
         )}
 
         {/* === MiniGameCatch === */}
-        {screen === "catch" && (
+        {screen === "catch" && !noaDead && !isSleeping && (
           <MiniGameCatch onExit={handleBack} moveCommand={moveCommand} />
         )}
 
         {/* === MiniGameSpace === */}
-        {screen === "space" && (
+        {screen === "space" && !noaDead && !isSleeping && (
           <MiniGameSpace onExit={handleBack} moveCommand={moveCommand} />
+        )}
+
+        {/* === Game Over (Tamagotchi) === */}
+        {noaDead && (
+          <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center text-white pixel-font">
+            <img
+              src="/images/rip.png"
+              alt="ripNoa"
+              className="w-[200px] h-[150px] mb-2 pixel-art"
+            />
+            <h1 className="text-sm font-bold mb-1 pixel-font">GAME OVER</h1>
+            <p className="text-xs mb-2 pixel-font">Pulsa “RESET” para reiniciar</p>
+          </div>
         )}
       </div>
 
@@ -328,27 +382,27 @@ export default function NoaTamagotchi() {
           onFeed={feedNoa}
           onPet={petNoa}
           onSleep={() => {
-            if (!isSleeping) setIsSleeping(true);
+            if (!isSleeping && !noaDead) setIsSleeping(true);
           }}
           onReset={() => {
             localStorage.removeItem("noaState");
             setNoaState(initialState);
-            setScreen("start"); // Volver a “Press Start”
-            setIsSleeping(false); // Asegurarse de que Noa no siga durmiendo
-            setCurrentAction(null); // Limpiar cualquier acción en curso
-            setSelectedMenuIndex(0); // Restablecer índice de menú
+            setScreen("start");
+            setIsSleeping(false);
+            setCurrentAction(null);
+            setSelectedMenuIndex(0);
+            setNoaDead(false);
           }}
-          onStartGame={startSelectedGame}
           onStart={handleStart}
+          onStartGame={startSelectedGame}
           onMove={(dir) => {
-            // Si estamos en menú de minijuegos, cambiar selección
             if (screen === "menu") {
               changeMenuSelection(dir === "left" ? "left" : "right");
             }
             handleMove(dir);
           }}
           onBack={handleBack}
-          isSleeping={isSleeping}
+          isSleeping={isSleeping || noaDead}
           isStarting={screen === "start"}
           inMenu={["menu", "catch", "space"].includes(screen)}
         />

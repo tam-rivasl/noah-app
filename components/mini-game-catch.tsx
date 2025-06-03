@@ -13,16 +13,22 @@ interface Obstacle {
   x: number;
   size: number; // escala (0.8, 1, 1.2)
 }
-
+// Añade este tipo para que quede más claro:
+type RecordEntry = {
+  score: number;
+  date: string; // formato "YYYY-MM-DD"
+  time: string; // formato "HH:MM:SS"
+};
 const CANVAS_WIDTH = 300;
-const CANVAS_HEIGHT = 220;
 const GROUND_OFFSET = 10;      // píxeles arriba del borde inferior
 const NOA_BASE = 64;           // tamaño base de Noa en px
 const OBSTACLE_BASE = 32;      // tamaño base de obstáculo en px
 const JUMP_HEIGHT = 80;        // píxeles de salto sobre groundOffset
 const GAME_INTERVAL = 50;      // ms (~20 FPS)
-const LANDING_GRACE_TIME = 70; // ms de gracia tras aterrizar
-const HORIZONTAL_SHRINK = 0.20; // 20% de reducción en la hitbox horizontal
+const LANDING_GRACE_TIME = 90; // ms de gracia tras aterrizar
+
+// Factor de reducción para la hitbox horizontal (tanto de Noa como de obstáculos)
+const HORIZONTAL_SHRINK = 0.20; // 20%
 
 // Sprites para Noa en suelo
 const GROUND_SPRITES = [
@@ -39,7 +45,7 @@ const JUMP_SPRITES = [
 ];
 
 export default function MiniGameCatch({ onExit, moveCommand }: MiniGameCatchProps) {
-  // Estados principales
+  // -------------- Estados de lógica del juego --------------
   const [started, setStarted] = useState(false);
   const [noaX, setNoaX] = useState(50);
   const [noaY, setNoaY] = useState(GROUND_OFFSET);
@@ -50,11 +56,11 @@ export default function MiniGameCatch({ onExit, moveCommand }: MiniGameCatchProp
   const [buffActive, setBuffActive] = useState(false);
   const [landingGrace, setLandingGrace] = useState(false);
 
-  // Índices de animación
+  // -------------- Animaciones de Noa --------------
   const [groundFrameIndex, setGroundFrameIndex] = useState(0);
   const [jumpFrameIndex, setJumpFrameIndex] = useState(0);
 
-  // Refs para temporización y contadores
+  // -------------- Temporizadores y refs --------------
   const startTimeRef = useRef<number>(Date.now());
   const lastTimeRef = useRef<number>(Date.now());
   const spawnBallTimerRef = useRef<number>(0);
@@ -63,7 +69,7 @@ export default function MiniGameCatch({ onExit, moveCommand }: MiniGameCatchProp
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const animRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Buff de tamaño al recoger un hueso
+  // -------------- Efecto “buff de tamaño” --------------
   const triggerBuff = useCallback(() => {
     if (buffActive) return;
     setBuffActive(true);
@@ -78,36 +84,37 @@ export default function MiniGameCatch({ onExit, moveCommand }: MiniGameCatchProp
     }, duration);
   }, [buffActive]);
 
-  // Salto simplificado con landingGrace
+  // -------------- Función de salto --------------
   const jump = useCallback(() => {
     if (gameOver || noaY > GROUND_OFFSET) return;
     setNoaY(GROUND_OFFSET + JUMP_HEIGHT);
     setLandingGrace(true);
 
-    clearInterval(animRef.current!); // detener cualquier animación previa
+    clearInterval(animRef.current!);
     setJumpFrameIndex(0);
 
+    // Al cabo de 500ms, Noa aterriza de golpe
     setTimeout(() => {
       setNoaY(GROUND_OFFSET);
+      // Tras aterrizar, gracia de 90ms sin colisiones
       setTimeout(() => {
         setLandingGrace(false);
       }, LANDING_GRACE_TIME);
     }, 500);
   }, [gameOver, noaY]);
 
-  // Animación de sprites
+  // -------------- Ciclo de animación de sprites --------------
   useEffect(() => {
     if (!started || gameOver) return;
-
     clearInterval(animRef.current!);
 
     if (noaY > GROUND_OFFSET) {
-      // Mientras Noa esté en aire, ciclar JUMP_SPRITES
+      // En el aire → ciclar sprites de salto
       animRef.current = setInterval(() => {
         setJumpFrameIndex((idx) => (idx + 1) % JUMP_SPRITES.length);
       }, 150);
     } else if (noaY === GROUND_OFFSET && !landingGrace) {
-      // Mientras Noa esté en suelo (sin gracia), ciclar GROUND_SPRITES
+      // En suelo (sin gracia) → ciclar sprites de suelo
       animRef.current = setInterval(() => {
         setGroundFrameIndex((idx) => (idx + 1) % GROUND_SPRITES.length);
       }, 200);
@@ -118,12 +125,12 @@ export default function MiniGameCatch({ onExit, moveCommand }: MiniGameCatchProp
     };
   }, [noaY, started, gameOver, landingGrace]);
 
-  // Manejo D-Pad
+  // -------------- Manejo de D-Pad --------------
   useEffect(() => {
     if (!moveCommand) return;
 
     if (!started && moveCommand === "up") {
-      // Al pulsar UP en la pantalla de instrucciones, iniciamos el juego
+      // En pantalla de instrucciones, pulsar ▲ inicia el juego
       setStarted(true);
       window.dispatchEvent(new Event("resetMove"));
       return;
@@ -142,7 +149,7 @@ export default function MiniGameCatch({ onExit, moveCommand }: MiniGameCatchProp
     }
   }, [moveCommand, started, gameOver, noaSize, jump]);
 
-  // Bucle principal
+  // -------------- Bucle principal de lógica --------------
   useEffect(() => {
     if (!started || gameOver) return;
 
@@ -155,10 +162,9 @@ export default function MiniGameCatch({ onExit, moveCommand }: MiniGameCatchProp
       lastTimeRef.current = now;
 
       if (gameOver) return;
-
       const elapsed = now - startTimeRef.current;
 
-      // 1) Velocidad en px/ms
+      // 1) Velocidad
       const baseSpeed = 0.15 + 0.025 * Math.floor(elapsed / 10000);
       const speed = Math.min(baseSpeed, 0.4);
       const dx = speed * delta;
@@ -175,7 +181,7 @@ export default function MiniGameCatch({ onExit, moveCommand }: MiniGameCatchProp
         ]);
       }
 
-      // 3) Generar huesos cada 4000ms
+      // 3) Generar huesos cada 4000 ms
       spawnBoneTimerRef.current += delta;
       if (spawnBoneTimerRef.current >= 4000) {
         spawnBoneTimerRef.current = 0;
@@ -192,45 +198,46 @@ export default function MiniGameCatch({ onExit, moveCommand }: MiniGameCatchProp
 
         for (const o of prev) {
           const newX = o.x - dx;
-          if (newX <= -OBSTACLE_BASE) continue; // fuera de pantalla
+          if (newX <= -OBSTACLE_BASE) continue; // ya fuera de pantalla
 
-          // Dimensiones y pos de Noa
+          // Hitbox de Noa (con 20% de reducción horizontal)
           const noaW = NOA_BASE * noaSize;
           const noaH = NOA_BASE * noaSize;
-          // Aplicamos SHRINK horizontal
-          const shrinkX = noaW * HORIZONTAL_SHRINK * 0.5;
-          const noaLeft = noaX + shrinkX;
-          const noaRight = noaX + noaW - shrinkX;
+          const shrinkXNoa = noaW * HORIZONTAL_SHRINK * 0.5;
+          const noaLeft = noaX + shrinkXNoa;
+          const noaRight = noaX + noaW - shrinkXNoa;
           const noaBottom = noaY;
           const noaTop = noaY + noaH;
 
-          // Dimensiones y pos del obstáculo
+          // Hitbox del obstáculo con “shrink” horizontal
           const obsW = OBSTACLE_BASE * o.size;
           const obsH = OBSTACLE_BASE * o.size;
-          const obsLeft = newX;
-          const obsRight = newX + obsW;
+          // Reducimos el ancho horizontal del obstáculo también un 20%
+          const shrinkXObs = obsW * HORIZONTAL_SHRINK * 0.5;
+          const obsLeft = newX + shrinkXObs;
+          const obsRight = newX + obsW - shrinkXObs;
           const obsBottom = GROUND_OFFSET;
           const obsTop = GROUND_OFFSET + obsH;
 
           if (o.type === "ball") {
-            // sólo colisiona si Noa está en suelo y no en gracia
+            // Solo colisiona si Noa en suelo y sin gracia
             if (noaY === GROUND_OFFSET && !landingGrace) {
               const overlapX = noaLeft < obsRight && noaRight > obsLeft;
               const overlapY = noaBottom < obsTop && noaTop > obsBottom;
               if (overlapX && overlapY) {
                 collided = true;
-                continue; // quitamos la pelota
+                continue; // descartamos esta pelota
               }
             }
             next.push({ ...o, x: newX });
           } else {
-            // hueso: recolección en aire o suelo
+            // Hueso: recolección en aire o suelo
             const overlapX = noaLeft < obsRight && noaRight > obsLeft;
             const overlapY = noaBottom < obsTop && noaTop > obsBottom;
             if (overlapX && overlapY) {
               bonesCollectedRef.current += 1;
               triggerBuff();
-              continue; // quitamos el hueso
+              continue; // descartamos este hueso
             }
             next.push({ ...o, x: newX });
           }
@@ -240,7 +247,7 @@ export default function MiniGameCatch({ onExit, moveCommand }: MiniGameCatchProp
         return next;
       });
 
-      // 5) Actualizar puntaje
+      // 5) Puntuación
       const timePoints = Math.floor(elapsed / 1000);
       setScore(timePoints + bonesCollectedRef.current * 20);
     }, GAME_INTERVAL);
@@ -249,24 +256,92 @@ export default function MiniGameCatch({ onExit, moveCommand }: MiniGameCatchProp
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
   }, [started, gameOver, noaX, noaY, noaSize, landingGrace, triggerBuff]);
+// —————————————— Nuevo estado: records y vista de records ——————————————
+  const [records, setRecords] = useState<RecordEntry[]>([]);
+  const [viewingRecords, setViewingRecords] = useState(false);
 
+  // Al montar, cargamos de localStorage (sólo una vez):
+  useEffect(() => {
+    const raw = localStorage.getItem("catchRecords") || "[]";
+    try {
+      const parsed: RecordEntry[] = JSON.parse(raw);
+      // Asegurarnos de que venga ordenado por score descendente
+      parsed.sort((a, b) => b.score - a.score);
+      setRecords(parsed.slice(0, 10));
+    } catch {
+      setRecords([]);
+   }
+ }, []);
+  // ----------------------------------------------------
+  //  Efecto “typewriter” para las instrucciones:
+  // ----------------------------------------------------
+  const instructions = [
+    "– Usa el D-Pad para mover a Noa a la izquierda o derecha.",
+    "– Presiona ▲ para saltar sobre las pelotas.",
+    "– Recoge huesos para obtener un buff aleatorio.",
+    "– Evita las pelotas hasta que termine el juego.",
+    "– ¡Buena suerte!",
+  ];
+  const [currentLine, setCurrentLine] = useState(0);
+  const [currentChar, setCurrentChar] = useState(0);
+  const [revealedLines, setRevealedLines] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (started) return;
+
+    // Si ya mostramos todas las líneas, terminamos
+    if (currentLine >= instructions.length) return;
+
+    const lineText = instructions[currentLine];
+    if (currentChar < lineText.length) {
+      // Agregar siguiente carácter en la misma línea
+      const timer = setTimeout(() => {
+        const nextPortion = lineText.slice(0, currentChar + 1);
+        setRevealedLines((prev) => {
+          const copy = [...prev];
+          copy[currentLine] = nextPortion;
+          return copy;
+        });
+        setCurrentChar((c) => c + 1);
+      }, 50); // 50 ms por carácter
+      return () => clearTimeout(timer);
+    } else {
+      // Terminamos esta línea; pasamos a la siguiente
+      const timer = setTimeout(() => {
+        setCurrentLine((l) => l + 1);
+        setCurrentChar(0);
+        // Inicializar la siguiente línea vacía
+        setRevealedLines((prev) => [...prev, ""]);
+      }, 300); // Pausa breve al terminar la línea
+      return () => clearTimeout(timer);
+    }
+  }, [currentLine, currentChar, instructions, started]);
+
+  // ----------------------------------------------------
+  //  Si no ha empezado → mostramos instrucción “typewriter”
+  // ----------------------------------------------------
   if (!started) {
-    // Pantalla de instrucciones con mismo diseño que Game Over
     return (
       <div
         className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center text-white pixel-font p-4"
         style={{ backdropFilter: "blur(2px)" }}
       >
-        <h2 className="text-sm font-normal mb-1">Instrucciones</h2>
-        <p className="text-[10px] mb-1">– Usa el D-Pad para mover a Noah a la izquierda o derecha.</p>
-        <p className="text-[10px] mb-1">– Presiona ▲ para saltar sobre las pelotas.</p>
-        <p className="text-[10px] mb-1">– Recoge huesos para obtener un buff aleatorio.</p>
-        <p className="text-[10px] mb-3">– Evita las pelotas hasta que termine el juego.</p>
-        <p className="text-[8px]">Presiona ▲ para comenzar</p>
+        <h2 className="text-sm font-normal mb-2">Instrucciones</h2>
+        <div className="space-y-1 text-[10px]">
+          {revealedLines.map((line, idx) => (
+            <p key={idx}>{line}</p>
+          ))}
+        </div>
+        {currentLine >= instructions.length && (
+          <p className="text-[8px] mt-3">Presiona ▲ para comenzar</p>
+        )}
       </div>
     );
   }
 
+  // ----------------------------------------------------
+  //  Render principal del juego
+  // ----------------------------------------------------
   return (
     <div
       className="relative w-[300px] h-[220px] bg-cover bg-center overflow-hidden mx-auto"
