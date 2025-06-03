@@ -8,18 +8,15 @@ export default function NoaSleeping() {
 
   const frames = [
     "/images/spreeds/sleeping/noa-bostezando.png",   // Frame 0
-    "/images/spreeds/sleeping/noa-durmiendo-2.png"];
+    "/images/spreeds/sleeping/noa-durmiendo-2.png",
+    "/images/spreeds/sleeping/noa-durmiendo-3.png",
+  ];
 
   useEffect(() => {
-    console.log("Número de frames:", frames.length); // debería imprimir 3
 
     // Cambia de frame cada segundo
     const interval = setInterval(() => {
-      setFrameIndex((prev) => {
-        const next = (prev + 1) % frames.length;
-        console.log("Frame actual:", next, "→", frames[next]);
-        return next;
-      });
+      setFrameIndex((prev) => (prev + 1) % frames.length);
     }, 1000);
 
     return () => clearInterval(interval);

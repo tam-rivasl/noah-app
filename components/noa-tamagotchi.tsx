@@ -330,7 +330,7 @@ export default function NoaTamagotchi() {
               </div>
             ) : (
               <>
-                <h2 className="text-lg pixel-font mb-2">Juega con Noah!</h2>
+                <h2 className="text-lg pixel-font mb-2">Juega con Noa!</h2>
                 <div className="flex gap-4 mb-2">
                   {menuOptions.map((opt, idx) => (
                     <button

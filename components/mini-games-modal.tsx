@@ -1,6 +1,6 @@
 "use client";
 
-import MiniGameCatch from "./mini-game";
+import MiniGameCatch from "./mini-game-catch";
 import MiniGameSpace from "./mini-game-space";
 import { useState } from "react";
 
