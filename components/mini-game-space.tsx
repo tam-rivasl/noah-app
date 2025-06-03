@@ -2,10 +2,12 @@
 
 import { useEffect, useState, useRef, useCallback } from "react";
 import Image from "next/image";
+import ScoreBoard, { RecordEntry } from "./score-board";
 
 interface MiniGameSpaceProps {
   onExit: () => void;
   moveCommand: "left" | "right" | "up" | "down" | null;
+  startCommand: boolean;
 }
 
 interface Meteor {
@@ -29,7 +31,7 @@ const MAX_SPEED = 10;                    // px por tick
 const SPEED_INCREASE_INTERVAL = 10000;   // cada 10 s
 const SPAWN_DECREASE_AMOUNT = 150;       // cada 10 s se reduce 150 ms
 
-export default function MiniGameSpace({ onExit, moveCommand }: MiniGameSpaceProps) {
+export default function MiniGameSpace({ onExit, moveCommand, startCommand }: MiniGameSpaceProps) {
   const [started, setStarted] = useState(false);
   const [meteors, setMeteors] = useState<Meteor[]>([]);
   // Iniciamos a Noa centrado horizontalmente
@@ -42,10 +44,42 @@ export default function MiniGameSpace({ onExit, moveCommand }: MiniGameSpaceProp
   const spawnIntervalRef = useRef(INITIAL_SPAWN_INTERVAL);
   const spawnTimerRef = useRef<NodeJS.Timeout | null>(null);
 
+  const [records, setRecords] = useState<RecordEntry[]>([]);
+  const [viewingRecords, setViewingRecords] = useState(false);
+
+  // Cargar historial guardado
+  useEffect(() => {
+    const raw = localStorage.getItem("spaceRecords") || "[]";
+    try {
+      const parsed: RecordEntry[] = JSON.parse(raw);
+      parsed.sort((a, b) => b.score - a.score);
+      setRecords(parsed.slice(0, 10));
+    } catch {
+      setRecords([]);
+    }
+  }, []);
+
+  // Guardar record al terminar la partida
+  useEffect(() => {
+    if (!gameOver) return;
+    const elapsedMs = elapsed;
+    const m = Math.floor(elapsedMs / 60000);
+    const s = Math.floor((elapsedMs % 60000) / 1000);
+    const duration = `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+    const newRecord: RecordEntry = {
+      score: Math.floor(elapsedMs / 1000),
+      date: new Date().toLocaleDateString("es-ES"),
+      time: duration,
+    };
+    const updated = [...records, newRecord].sort((a, b) => b.score - a.score).slice(0, 10);
+    setRecords(updated);
+    localStorage.setItem("spaceRecords", JSON.stringify(updated));
+  }, [gameOver]);
+
   // ——— Instrucciones para “typewriter” ———
   const instructions = [
     "– Mueve a Noa con ← / →.",
-    "– Presiona ▲ (UP) para iniciar.",
+    "– Presiona START para iniciar.",
     "– Cada 10 s: meteoros más frecuentes y rápidos.",
     "– Sobrevive el mayor tiempo posible.",
   ];
@@ -91,12 +125,16 @@ export default function MiniGameSpace({ onExit, moveCommand }: MiniGameSpaceProp
     spawnIntervalRef.current = INITIAL_SPAWN_INTERVAL;
   }, []);
 
-  // ——— Listener de teclado: UP inicia, B sale si GameOver ———
+  // ——— Iniciar juego con el botón Start ———
+  useEffect(() => {
+    if (!started && currentLine >= instructions.length && startCommand) {
+      handleStart();
+    }
+  }, [startCommand, started, currentLine, instructions.length, handleStart]);
+
+  // ——— Listener de teclado: B sale si GameOver ———
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (!started && currentLine >= instructions.length && e.key === "ArrowUp") {
-        handleStart();
-      }
       if (gameOver && e.key.toLowerCase() === "b") {
         onExit();
       }
@@ -105,15 +143,9 @@ export default function MiniGameSpace({ onExit, moveCommand }: MiniGameSpaceProp
     return () => window.removeEventListener("keydown", onKey);
   }, [started, gameOver, handleStart, onExit, currentLine, instructions.length]);
 
-  // ——— D-Pad: UP inicia o mueve lateralmente ———
+  // ——— D-Pad: mueve lateralmente ———
   useEffect(() => {
     if (!moveCommand) return;
-
-    if (!started && currentLine >= instructions.length && moveCommand === "up") {
-      handleStart();
-      window.dispatchEvent(new Event("resetMove"));
-      return;
-    }
     if (started && !gameOver) {
       if (moveCommand === "left") {
         setPlayerX((x) => Math.max(x - 20, 0));
@@ -122,7 +154,7 @@ export default function MiniGameSpace({ onExit, moveCommand }: MiniGameSpaceProp
       }
       window.dispatchEvent(new Event("resetMove"));
     }
-  }, [moveCommand, started, gameOver, handleStart, currentLine, instructions.length]);
+  }, [moveCommand, started, gameOver]);
 
   // ——— Ajustar dificultad cada segundo ———
   useEffect(() => {
@@ -227,7 +259,7 @@ export default function MiniGameSpace({ onExit, moveCommand }: MiniGameSpaceProp
           ))}
         </div>
         {currentLine >= instructions.length && (
-          <p className="text-[8px] mt-3">Presiona ▲ para comenzar</p>
+          <p className="text-[8px] mt-3">Presiona START para comenzar</p>
         )}
       </div>
     );
@@ -289,19 +321,36 @@ export default function MiniGameSpace({ onExit, moveCommand }: MiniGameSpaceProp
         </div>
       )}
 
-      {/* Game Over */}
+      {/* Game Over / Records */}
       {gameOver && (
-        <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center text-white pixel-font">
-          <Image
-            src="/images/space-game/explocion.png"
-            alt="Boom"
-            width={48}
-            height={48}
-            className="pixel-art mb-2"
+        viewingRecords ? (
+          <ScoreBoard
+            records={records}
+            onClose={onExit}
+            onReset={() => {
+              setRecords([]);
+              localStorage.removeItem("spaceRecords");
+            }}
           />
-          <p className="text-[12px] font-bold mb-1">¡BOOM! Perdiste 🚀</p>
-          <p className="text-[10px] mb-2">Presiona B para salir</p>
-        </div>
+        ) : (
+          <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center text-white pixel-font">
+            <Image
+              src="/images/space-game/explocion.png"
+              alt="Boom"
+              width={48}
+              height={48}
+              className="pixel-art mb-2"
+            />
+            <p className="text-[12px] font-bold mb-1">¡BOOM! Perdiste 🚀</p>
+            <button
+              onClick={() => setViewingRecords(true)}
+              className="bg-gray-700 hover:bg-gray-600 transition-transform duration-200 active:scale-95 text-[10px] px-2 py-1 rounded mb-2"
+            >
+              Ver historial
+            </button>
+            <p className="text-[10px] mb-2">Presiona B para salir</p>
+          </div>
+        )
       )}
     </div>
   );

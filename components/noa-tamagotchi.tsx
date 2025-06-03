@@ -32,6 +32,7 @@ export default function NoaTamagotchi() {
   const [isSleeping, setIsSleeping] = useState(false);
   const [screen, setScreen] = useState<"start" | "main" | "menu" | "catch" | "space">("start");
   const [moveCommand, setMoveCommand] = useState<"left" | "right" | "up" | "down" | null>(null);
+  const [startCommand, setStartCommand] = useState(false);
   const [selectedMenuIndex, setSelectedMenuIndex] = useState(0);
   const menuOptions: ("catch" | "space")[] = ["catch", "space"];
   const [time, setTime] = useState(new Date());
@@ -191,6 +192,11 @@ export default function NoaTamagotchi() {
   // Cambiar pantalla “start” ↔ “main” ↔ “menu”
   const handleStart = () => {
     if (noaDead) return;
+    if (screen === "catch" || screen === "space") {
+      setStartCommand(true);
+      setTimeout(() => setStartCommand(false), 100);
+      return;
+    }
     // Si estamos en “start” → “main”, si en “main” → “menu”
     if (screen === "start") {
       setScreen("main");
@@ -330,7 +336,7 @@ export default function NoaTamagotchi() {
               </div>
             ) : (
               <>
-                <h2 className="text-lg pixel-font mb-2">Juega con Noah!</h2>
+                <h2 className="text-lg pixel-font mb-2">Juega con Noa!</h2>
                 <div className="flex gap-4 mb-2">
                   {menuOptions.map((opt, idx) => (
                     <button
@@ -354,12 +360,12 @@ export default function NoaTamagotchi() {
 
         {/* === MiniGameCatch === */}
         {screen === "catch" && !noaDead && !isSleeping && (
-          <MiniGameCatch onExit={handleBack} moveCommand={moveCommand} />
+          <MiniGameCatch onExit={handleBack} moveCommand={moveCommand} startCommand={startCommand} />
         )}
 
         {/* === MiniGameSpace === */}
         {screen === "space" && !noaDead && !isSleeping && (
-          <MiniGameSpace onExit={handleBack} moveCommand={moveCommand} />
+          <MiniGameSpace onExit={handleBack} moveCommand={moveCommand} startCommand={startCommand} />
         )}
 
         {/* === Game Over (Tamagotchi) === */}
