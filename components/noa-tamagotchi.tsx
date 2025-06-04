@@ -11,6 +11,7 @@ import { NoaPetting } from "./noa-petting";
 // Importa tus minijuegos:
 import MiniGameCatch from "./mini-game-catch";
 import MiniGameSpace from "./mini-game-space";
+import AudioSettingsModal from './AudioSettingsModal';
 
 export type NoaState = {
   hunger: number;
@@ -46,7 +47,7 @@ export default function NoaTamagotchi() {
     "/images/back-grounds/day.png"
   );
   const [noaDead, setNoaDead] = useState(false);
-  const [showSoundModal, setShowSoundModal] = useState(false);
+  const [visible, setShowSoundModal] = useState(false);
   const [volume, setVolume] = useState(1); // de 0.0 a 1.0
   const [selectedIcon, setSelectedIcon] = useState<"none" | "settings">("none");
 
@@ -473,37 +474,6 @@ const startSelectedGame = () => {
             <p className="text-xs mb-2 pixel-font">
               Pulsa “RESET” para reiniciar
             </p>
-          </div>
-        )}
-        {showSoundModal && (
-          <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center z-50 text-white pixel-font p-4">
-            <h2 className="mb-2 text-lg">🎵 Opciones de Sonido</h2>
-            <div className="flex gap-2 mb-4">
-              <button
-                onClick={() => setVolume((v) => Math.max(0, v - 0.1))}
-                className="bg-white text-black px-2 py-1 text-sm"
-              >
-                🔉 Bajar
-              </button>
-              <button
-                onClick={() => setVolume((v) => Math.min(1, v + 0.1))}
-                className="bg-white text-black px-2 py-1 text-sm"
-              >
-                🔊 Subir
-              </button>
-              <button
-                onClick={() => setVolume(0)}
-                className="bg-white text-black px-2 py-1 text-sm"
-              >
-                🔇 Mute
-              </button>
-            </div>
-            <button
-              onClick={() => setShowSoundModal(false)}
-              className="bg-gray-600 px-3 py-1 text-sm rounded"
-            >
-              Cerrar
-            </button>
           </div>
         )}
           {/* Icono de configuración en la parte inferior */}
