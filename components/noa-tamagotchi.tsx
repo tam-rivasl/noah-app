@@ -63,6 +63,10 @@ export default function NoaTamagotchi() {
   const [audioIndex, setAudioIndex] = useState(0);
   const [shopIndex, setShopIndex] = useState(0);
   const [coinsSpent, setCoinsSpent] = useState(0);
+  const [shopConfirm, setShopConfirm] = useState<string | null>(null);
+  const [shopError, setShopError] = useState<string | null>(null);
+  const [bgmEnabled, setBgmEnabled] = useState(true);
+  const [actionSoundEnabled, setActionSoundEnabled] = useState(true);
 
   useEffect(() => {
     const stored = localStorage.getItem("coinsSpent");
@@ -223,31 +227,49 @@ export default function NoaTamagotchi() {
   const handleBuy = (id: string) => {
     const item = shopItems.find((i) => i.id === id);
     if (!item) return;
-    if (!window.confirm("¿Estás seguro de comprar?")) return;
     if (money < item.price) {
-      alert("No tienes suficiente dinero");
+      setShopError("❌ No tienes suficientes monedas");
+      setShopConfirm(null);
       return;
     }
     const spent = coinsSpent + item.price;
     setCoinsSpent(spent);
     localStorage.setItem("coinsSpent", String(spent));
+    setShopError(null);
+    setShopConfirm(null);
+  };
+
+  const playActionSound = () => {
+    if (!actionSoundEnabled) return;
+    const el = document.getElementById("action-sound") as HTMLAudioElement | null;
+    if (el) {
+      el.currentTime = 0;
+      void el.play();
+    }
   };
 
   const handleAButton = () => {
     if (visible) {
+      playActionSound();
       if (audioIndex === 0) setVolume(Math.max(0, volume - 0.1));
       else if (audioIndex === 1) setVolume(Math.min(1, volume + 0.1));
       else if (audioIndex === 2) setVolume(0);
-      else setShowSoundModal(false);
+      else if (audioIndex === 3) setBgmEnabled((b) => !b);
+      else if (audioIndex === 4) setActionSoundEnabled((b) => !b);
       return;
     }
 
     if (shopVisible) {
-      if (shopIndex === shopItems.length) {
+      playActionSound();
+      if (shopConfirm) {
+        handleBuy(shopConfirm);
+      } else if (shopIndex === shopItems.length) {
         setShopVisible(false);
+        setShopIndex(0);
+        setShopError(null);
         setScreen("main");
       } else {
-        handleBuy(shopItems[shopIndex].id);
+        setShopConfirm(shopItems[shopIndex].id);
       }
       return;
     }
@@ -263,7 +285,7 @@ export default function NoaTamagotchi() {
       setShopIndex(0);
       return;
     }
-
+    playActionSound();
     feedNoa();
   };
 
@@ -279,6 +301,7 @@ export default function NoaTamagotchi() {
   // D-PAD
   const handleMove = (dir: "left" | "right" | "up" | "down"): void => {
     if (noaDead) return;
+    playActionSound();
     setMoveCommand(dir);
     setTimeout(() => setMoveCommand(null), 100);
   };
@@ -302,11 +325,19 @@ export default function NoaTamagotchi() {
 
   const handleBack = () => {
     if (noaDead) return;
+    playActionSound();
     if (shopVisible) {
-      setShopVisible(false);
-      setScreen("main");
+      if (shopConfirm) {
+        setShopConfirm(null);
+      } else {
+        setShopVisible(false);
+        setShopIndex(0);
+        setShopError(null);
+        setScreen("main");
+      }
     } else if (visible) {
       setShowSoundModal(false);
+      setAudioIndex(0);
     } else if (screen === "menu") {
       setScreen("main");
     } else if (screen === "catch" || screen === "space") {
@@ -348,7 +379,10 @@ const startSelectedGame = () => {
       "warning-bgm"
     ) as HTMLAudioElement;
 
-    if (emotion === "normal") {
+    if (!bgmEnabled) {
+      normalBgm.pause();
+      warningBgm.pause();
+    } else if (emotion === "normal") {
       normalBgm.play();
       warningBgm.pause();
     } else {
@@ -360,7 +394,7 @@ const startSelectedGame = () => {
       normalBgm.pause();
       warningBgm.pause();
     };
-  }, [emotion]);
+  }, [emotion, bgmEnabled]);
 
   // 11) Control de sonido de advertencia
   useEffect(() => {
@@ -383,6 +417,7 @@ const startSelectedGame = () => {
       document.getElementById("normal-bgm") as HTMLAudioElement,
       document.getElementById("warning-bgm") as HTMLAudioElement,
       document.getElementById("warning-sound") as HTMLAudioElement,
+      document.getElementById("action-sound") as HTMLAudioElement,
     ];
     allSounds.forEach((audio) => {
       if (audio) {
@@ -390,6 +425,13 @@ const startSelectedGame = () => {
       }
     });
   }, [volume]);
+
+  useEffect(() => {
+    if (!actionSoundEnabled) {
+      const a = document.getElementById("action-sound") as HTMLAudioElement | null;
+      if (a) a.pause();
+    }
+  }, [actionSoundEnabled]);
 
   return (
     <div className="gameboy">
@@ -403,6 +445,7 @@ const startSelectedGame = () => {
         <audio id="warning-sound" src="/sounds/warning.mp3" />
         <audio id="normal-bgm" src="/sounds/sound-1.mp3" loop />
         <audio id="warning-bgm" src="/sounds/warning-music.mp3" loop />
+        <audio id="action-sound" src="/sounds/seleccionar.mp3" />
       </div>
 
       {/* -------------------- PANTALLA -------------------- */}
@@ -579,24 +622,21 @@ const startSelectedGame = () => {
 
         <AudioSettingsModal
           visible={visible}
-          onClose={() => {
-            setShowSoundModal(false);
-            setAudioIndex(0);
-          }}
           volume={volume}
           onVolumeChange={setVolume}
           onMute={() => setVolume(0)}
+          bgmEnabled={bgmEnabled}
+          onToggleBgm={() => setBgmEnabled((b) => !b)}
+          sfxEnabled={actionSoundEnabled}
+          onToggleSfx={() => setActionSoundEnabled((b) => !b)}
           selectedIndex={audioIndex}
         />
         <ShopModal
           visible={shopVisible}
-          onClose={() => {
-            setShopVisible(false);
-            setShopIndex(0);
-          }}
-          onBuy={handleBuy}
           selectedIndex={shopIndex}
           money={money}
+          confirming={shopConfirm}
+          error={shopError}
         />
       </div>
       {/* -------------------- CONTROLES -------------------- */}
@@ -620,7 +660,7 @@ const startSelectedGame = () => {
           onStartGame={startSelectedGame}
           onMove={(dir) => {
             if (visible) {
-              const max = 3;
+              const max = 4;
               if (dir === "left") setAudioIndex((i) => (i - 1 + max + 1) % (max + 1));
               else if (dir === "right") setAudioIndex((i) => (i + 1) % (max + 1));
             } else if (shopVisible) {

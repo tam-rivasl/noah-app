@@ -1,13 +1,15 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 
 export type ShopModalProps = {
   visible: boolean;
-  onClose: () => void;
-  onBuy: (itemId: string) => void;
   selectedIndex: number;
   money: number;
+  /** id del ítem en proceso de confirmación */
+  confirming: string | null;
+  /** mensaje de error por falta de saldo */
+  error: string | null;
 };
 
 const items = [
@@ -20,32 +22,17 @@ const items = [
 
 export default function ShopModal({
   visible,
-  onClose,
-  onBuy,
   selectedIndex,
   money,
+  confirming,
+  error,
 }: ShopModalProps) {
-  const [confirming, setConfirming] = useState<null | string>(null);
-  const [error, setError] = useState<string | null>(null);
 
   if (!visible) return null;
 
   const visibleItems = [...items, { id: "exit", name: "✖️ Salir de la tienda", price: 0 }];
   const selectedItem = visibleItems[selectedIndex];
 
-  const handleBuyConfirm = () => {
-    if (!confirming) return;
-    const item = items.find((i) => i.id === confirming);
-    if (!item) return;
-
-    if (money >= item.price) {
-      onBuy(item.id);
-      setConfirming(null);
-      setError(null);
-    } else {
-      setError("❌ No tienes suficientes monedas");
-    }
-  };
 
   const start = Math.max(0, selectedIndex - 1);
   const end = start + 3;
@@ -72,20 +59,7 @@ export default function ShopModal({
                 <p>
                   ¿Comprar <strong>{items.find((i) => i.id === confirming)?.name}</strong> por {items.find((i) => i.id === confirming)?.price} 🪙?
                 </p>
-                <div className="flex justify-center gap-4">
-                  <button
-                    onClick={handleBuyConfirm}
-                    className="bg-green-600 hover:bg-green-400 px-3 py-1 text-xs border border-white rounded shadow"
-                  >
-                    ✅ Sí
-                  </button>
-                  <button
-                    onClick={() => setConfirming(null)}
-                    className="bg-red-600 hover:bg-red-400 px-3 py-1 text-xs border border-white rounded shadow"
-                  >
-                    ❌ No
-                  </button>
-                </div>
+                <p className="text-xs text-pink-300">A = Sí, B = No</p>
               </div>
             ) : (
               <div className="space-y-2 overflow-y-auto max-h-60">
@@ -109,23 +83,13 @@ export default function ShopModal({
               </div>
             )}
 
-            <div className="mt-4 text-center flex-shrink-0">
-              {selectedItem.id === "exit" ? (
-                <button
-                  onClick={onClose}
-                  className="bg-red-600 px-4 py-1 text-xs border border-white hover:bg-red-400 rounded"
-                >
-                  ✖️ Cerrar
-                </button>
-              ) : (
-                <button
-                  onClick={() => setConfirming(selectedItem.id)}
-                  className="bg-green-500 text-black px-4 py-1 text-xs border border-white hover:bg-green-300 rounded"
-                >
-                  A = Comprar
-                </button>
+            <div className="mt-4 text-center flex-shrink-0 space-y-1">
+              {confirming ? null : (
+                <p className="text-xs text-pink-300">
+                  {selectedItem.id === "exit" ? "A = Salir" : "A = Comprar"}
+                </p>
               )}
-              <p className="text-xs text-pink-300 mt-1">B = Volver</p>
+              <p className="text-xs text-pink-300">B = Volver</p>
             </div>
           </div>
         </div>
