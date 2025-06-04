@@ -643,7 +643,7 @@ const startSelectedGame = () => {
       <div className="gameboy-controls">
         <ActionButtons
           onFeed={handleAButton}
-          onPet={petNoa}
+          onPet={shopVisible || visible ? handleBack : petNoa}
           onSleep={() => {
             if (!isSleeping && !noaDead) setIsSleeping(true);
           }}
@@ -692,7 +692,7 @@ const startSelectedGame = () => {
           onBack={handleBack}
           isSleeping={isSleeping || noaDead}
           isStarting={screen === "start"}
-          inMenu={["menu", "catch", "space"].includes(screen) || shopVisible || visible}
+          inMenu={["menu", "catch", "space"].includes(screen)}
         />
       </div>
     </div>
