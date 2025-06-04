@@ -240,6 +240,37 @@ export default function NoaTamagotchi() {
 
   const emotion = getEmotional();
 
+  // 10) Control de música de fondo
+  useEffect(() => {
+    const normalBgm = document.getElementById('normal-bgm') as HTMLAudioElement;
+    const warningBgm = document.getElementById('warning-bgm') as HTMLAudioElement;
+
+    if (emotion === 'normal') {
+      normalBgm.play();
+      warningBgm.pause();
+    } else {
+      normalBgm.pause();
+      warningBgm.play();
+    }
+
+    return () => {
+      normalBgm.pause();
+      warningBgm.pause();
+    };
+  }, [emotion]);
+
+  // 11) Control de sonido de advertencia
+  useEffect(() => {
+    const warningSound = document.getElementById('warning-sound') as HTMLAudioElement;
+
+    if (emotion !== 'normal') {
+      warningSound.play();
+    } else {
+      warningSound.pause();
+    }
+    return () => { warningSound.pause(); };
+  }, [emotion]);
+
   return (
     <div className="gameboy">
       {/* -------------------- HEADER -------------------- */}
@@ -249,6 +280,9 @@ export default function NoaTamagotchi() {
           alt="NOA Console"
           className="gameboy-logo mx-auto"
         />
+        <audio id="warning-sound" src="/sounds/warning.mp3" />
+        <audio id="normal-bgm" src="/sounds/sound-1.mp3" loop />
+        <audio id="warning-bgm" src="/sounds/warning-music.mp3" loop />
       </div>
 
       {/* -------------------- PANTALLA -------------------- */}
