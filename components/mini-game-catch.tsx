@@ -1,10 +1,12 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
+import ScoreBoard, { RecordEntry } from "./score-board";
 
 interface MiniGameCatchProps {
   onExit: () => void;
   moveCommand: "left" | "right" | "up" | "down" | null;
+  startCommand: boolean;
 }
 
 interface Obstacle {
@@ -13,12 +15,6 @@ interface Obstacle {
   x: number;
   size: number; // escala (0.8, 1, 1.2)
 }
-// Añade este tipo para que quede más claro:
-type RecordEntry = {
-  score: number;
-  date: string; // formato "YYYY-MM-DD"
-  time: string; // formato "HH:MM:SS"
-};
 const CANVAS_WIDTH = 300;
 const GROUND_OFFSET = 10;      // píxeles arriba del borde inferior
 const NOA_BASE = 64;           // tamaño base de Noa en px
@@ -44,7 +40,7 @@ const JUMP_SPRITES = [
   "/images/spreeds/jumping/noa-saltando-moviendo-la-cola.png",
 ];
 
-export default function MiniGameCatch({ onExit, moveCommand }: MiniGameCatchProps) {
+export default function MiniGameCatch({ onExit, moveCommand, startCommand }: MiniGameCatchProps) {
   // -------------- Estados de lógica del juego --------------
   const [started, setStarted] = useState(false);
   const [noaX, setNoaX] = useState(50);
@@ -125,16 +121,16 @@ export default function MiniGameCatch({ onExit, moveCommand }: MiniGameCatchProp
     };
   }, [noaY, started, gameOver, landingGrace]);
 
+  // -------------- Iniciar juego con el botón Start --------------
+  useEffect(() => {
+    if (!started && currentLine >= instructions.length && startCommand) {
+      setStarted(true);
+    }
+  }, [startCommand, started]);
+
   // -------------- Manejo de D-Pad --------------
   useEffect(() => {
     if (!moveCommand) return;
-
-    if (!started && moveCommand === "up") {
-      // En pantalla de instrucciones, pulsar ▲ inicia el juego
-      setStarted(true);
-      window.dispatchEvent(new Event("resetMove"));
-      return;
-    }
 
     if (started && !gameOver) {
       if (moveCommand === "left") {
@@ -271,7 +267,24 @@ export default function MiniGameCatch({ onExit, moveCommand }: MiniGameCatchProp
     } catch {
       setRecords([]);
    }
- }, []);
+  }, []);
+
+  // Guardar record al terminar la partida
+  useEffect(() => {
+    if (!gameOver) return;
+    const elapsedMs = Date.now() - startTimeRef.current;
+    const m = Math.floor(elapsedMs / 60000);
+    const s = Math.floor((elapsedMs % 60000) / 1000);
+    const duration = `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+    const newRecord: RecordEntry = {
+      score,
+      date: new Date().toLocaleDateString("es-ES"),
+      time: duration,
+    };
+    const updated = [...records, newRecord].sort((a, b) => b.score - a.score).slice(0, 10);
+    setRecords(updated);
+    localStorage.setItem("catchRecords", JSON.stringify(updated));
+  }, [gameOver]);
   // ----------------------------------------------------
   //  Efecto “typewriter” para las instrucciones:
   // ----------------------------------------------------
@@ -333,7 +346,7 @@ export default function MiniGameCatch({ onExit, moveCommand }: MiniGameCatchProp
           ))}
         </div>
         {currentLine >= instructions.length && (
-          <p className="text-[8px] mt-3">Presiona ▲ para comenzar</p>
+          <p className="text-[8px] mt-3">Presiona START para comenzar</p>
         )}
       </div>
     );
@@ -391,18 +404,35 @@ export default function MiniGameCatch({ onExit, moveCommand }: MiniGameCatchProp
         />
       )}
 
-      {/* Game Over */}
+      {/* Game Over / Records */}
       {gameOver && (
-        <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center text-white pixel-font">
-          <img
-            src="/images/noa-llorando.png"
-            alt="Noa triste"
-            className="w-[62px] h-[62px] mb-1"
+        viewingRecords ? (
+          <ScoreBoard
+            records={records}
+            onClose={onExit}
+            onReset={() => {
+              setRecords([]);
+              localStorage.removeItem("catchRecords");
+            }}
           />
-          <p className="text-sm font-normal mb-1">¡Game Over!</p>
-          <p className="text-[10px] mb-2">Puntuación final: {score}</p>
-          <p className="text-[8px]">Presiona B para volver</p>
-        </div>
+        ) : (
+          <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center text-white pixel-font">
+            <img
+              src="/images/noa-llorando.png"
+              alt="Noa triste"
+              className="w-[62px] h-[62px] mb-1"
+            />
+            <p className="text-sm font-normal mb-1">¡Game Over!</p>
+            <p className="text-[10px] mb-2">Puntuación final: {score}</p>
+            <button
+              onClick={() => setViewingRecords(true)}
+              className="bg-gray-700 hover:bg-gray-600 transition-transform duration-200 active:scale-95 text-[10px] px-2 py-1 rounded mb-2"
+            >
+              Ver historial
+            </button>
+            <p className="text-[8px]">Presiona B para volver</p>
+          </div>
+        )
       )}
     </div>
   );
