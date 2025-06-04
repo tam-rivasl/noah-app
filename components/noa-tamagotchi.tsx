@@ -7,6 +7,7 @@ import NoaWalking from "./noa-walking";
 import NoaEating from "./noa-eating";
 import NoaSleeping from "./noa-sleeping";
 import { NoaPetting } from "./noa-petting";
+import SoundControls from "./sound-controls";
 
 // Importa tus minijuegos:
 import MiniGameCatch from "./mini-game-catch";
@@ -415,6 +416,9 @@ export default function NoaTamagotchi() {
           </div>
         )}
       </div>
+
+      {/* -------------------- SOUND CONTROLS -------------------- */}
+      <SoundControls />
 
       {/* -------------------- CONTROLES -------------------- */}
       <div className="gameboy-controls">
