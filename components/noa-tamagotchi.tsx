@@ -11,7 +11,8 @@ import { NoaPetting } from "./noa-petting";
 // Importa tus minijuegos:
 import MiniGameCatch from "./mini-game-catch";
 import MiniGameSpace from "./mini-game-space";
-import AudioSettingsModal from './AudioSettingsModal';
+import AudioSettingsModal from "./AudioSettingsModal";
+import ShopModal from "./shopModal";
 
 export type NoaState = {
   hunger: number;
@@ -48,8 +49,11 @@ export default function NoaTamagotchi() {
   );
   const [noaDead, setNoaDead] = useState(false);
   const [visible, setShowSoundModal] = useState(false);
+  const [shopVisible, setShopVisible] = useState(false);
   const [volume, setVolume] = useState(1); // de 0.0 a 1.0
-  const [selectedIcon, setSelectedIcon] = useState<"none" | "settings">("none");
+  const [selectedIcon, setSelectedIcon] = useState<"none" | "settings" | "shop">(
+    "none"
+  );
 
   // —————————————————————————————————————————————————
   // 1) Cargar estado guardado
@@ -189,6 +193,20 @@ export default function NoaTamagotchi() {
     }
   };
 
+  const handleAButton = () => {
+    if (selectedIcon === "settings") {
+      setShowSoundModal(true);
+      return;
+    }
+
+    if (selectedIcon === "shop") {
+      setShopVisible(true);
+      return;
+    }
+
+    feedNoa();
+  };
+
   // Limpiar acción después de 2s (si no duerme ni está muerto)
   useEffect(() => {
     if (currentAction && !isSleeping && !noaDead) {
@@ -233,11 +251,6 @@ export default function NoaTamagotchi() {
 
   // === iniciar el minijuego seleccionado
 const startSelectedGame = () => {
-  if (selectedIcon === "settings") {
-    setShowSoundModal(true);
-    return;
-  }
-
   if (noaDead || isSleeping) return;
   gaming();
   setScreen(menuOptions[selectedMenuIndex]);
@@ -465,37 +478,49 @@ const startSelectedGame = () => {
         {/* === Game Over (Tamagotchi) === */}
         {noaDead && (
           <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center text-white pixel-font">
-            <img
-              src="/images/rip.png"
-              alt="ripNoa"
-              className="w-[200px] h-[150px] mb-2 pixel-art"
-            />
+            <img src="/images/rip.png" alt="ripNoa" className="w-[200px] h-[150px] mb-2 pixel-art" />
             <h1 className="text-sm font-bold mb-1 pixel-font">GAME OVER</h1>
-            <p className="text-xs mb-2 pixel-font">
-              Pulsa “RESET” para reiniciar
-            </p>
+            <p className="text-xs mb-2 pixel-font">Pulsa “RESET” para reiniciar</p>
           </div>
         )}
-          {/* Icono de configuración en la parte inferior */}
-      <div className="absolute bottom-2 right-2 z-20">
-        <div
-          className={`w-8 h-8 pixel-art cursor-pointer ${
-            selectedIcon === "settings" ? "ring-2 ring-white" : ""
-          }`}
-          onClick={() => setShowSoundModal(true)}
-        >
-          <img
-            src="/images/ajustes.png"
-            alt="Config"
-            className="w-full h-full"
-          />
+
+        {/* Iconos inferiores */}
+        <div className="absolute bottom-2 left-2 right-2 flex justify-between z-20">
+          <div
+            className={`w-8 h-8 pixel-art cursor-pointer flex items-center justify-center ${
+              selectedIcon === "shop" ? "ring-2 ring-white animate-pulse" : ""
+            }`}
+            onClick={() => setShopVisible(true)}
+          >
+            <img src="/images/tienda.png" alt="Shop" className="w-full h-full" />
+          </div>
+          <div
+            className={`w-8 h-8 pixel-art cursor-pointer flex items-center justify-center ${
+              selectedIcon === "settings" ? "ring-2 ring-white animate-pulse" : ""
+            }`}
+            onClick={() => setShowSoundModal(true)}
+          >
+            <img src="/images/ajustes.png" alt="Config" className="w-full h-full" />
+          </div>
         </div>
-      </div>
+
+        <AudioSettingsModal
+          visible={visible}
+          onClose={() => setShowSoundModal(false)}
+          volume={volume}
+          onVolumeChange={setVolume}
+          onMute={() => setVolume(0)}
+        />
+        <ShopModal
+          visible={shopVisible}
+          onClose={() => setShopVisible(false)}
+          onBuy={(id) => console.log("buy", id)}
+        />
       </div>
       {/* -------------------- CONTROLES -------------------- */}
       <div className="gameboy-controls">
         <ActionButtons
-          onFeed={feedNoa}
+          onFeed={handleAButton}
           onPet={petNoa}
           onSleep={() => {
             if (!isSleeping && !noaDead) setIsSleeping(true);
@@ -515,11 +540,21 @@ const startSelectedGame = () => {
             if (screen === "menu") {
               changeMenuSelection(dir === "left" ? "left" : "right");
             } else if (screen === "main") {
-              // Permitir selección del icono de config
-              if (dir === "right" || dir === "down") {
-                setSelectedIcon("settings");
-              } else {
+              const icons = ["shop", "settings"] as const;
+              if (dir === "left" || dir === "right") {
+                const currentIndex = icons.indexOf(selectedIcon as any);
+                const step = dir === "left" ? -1 : 1;
+                const nextIndex =
+                  currentIndex === -1
+                    ? dir === "left"
+                      ? icons.length - 1
+                      : 0
+                    : (currentIndex + step + icons.length) % icons.length;
+                setSelectedIcon(icons[nextIndex]);
+              } else if (dir === "up") {
                 setSelectedIcon("none");
+              } else if (dir === "down" && selectedIcon === "none") {
+                setSelectedIcon("shop");
               }
             }
             handleMove(dir);
