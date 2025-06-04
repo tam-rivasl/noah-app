@@ -14,6 +14,12 @@ import MiniGameSpace from "./mini-game-space";
 import AudioSettingsModal from "./AudioSettingsModal";
 import ShopModal from "./shopModal";
 
+const shopItems = [
+  { id: "food", name: "🍗 Comida", price: 10 },
+  { id: "toy", name: "🧸 Juguete", price: 15 },
+  { id: "bed", name: "🛏️ Cama nueva", price: 30 },
+];
+
 export type NoaState = {
   hunger: number;
   happiness: number;
@@ -54,6 +60,27 @@ export default function NoaTamagotchi() {
   const [selectedIcon, setSelectedIcon] = useState<"none" | "settings" | "shop">(
     "none"
   );
+  const [audioIndex, setAudioIndex] = useState(0);
+  const [shopIndex, setShopIndex] = useState(0);
+  const [coinsSpent, setCoinsSpent] = useState(0);
+
+  useEffect(() => {
+    const stored = localStorage.getItem("coinsSpent");
+    if (stored) setCoinsSpent(parseInt(stored, 10));
+  }, []);
+
+  const getTotalScore = useCallback(() => {
+    try {
+      const catchRecords = JSON.parse(localStorage.getItem("catchRecords") || "[]");
+      const spaceRecords = JSON.parse(localStorage.getItem("spaceRecords") || "[]");
+      const all = [...catchRecords, ...spaceRecords];
+      return all.reduce((sum: number, r: any) => sum + (r.score || 0), 0);
+    } catch {
+      return 0;
+    }
+  }, []);
+
+  const money = getTotalScore() - coinsSpent;
 
   // —————————————————————————————————————————————————
   // 1) Cargar estado guardado
@@ -193,14 +220,47 @@ export default function NoaTamagotchi() {
     }
   };
 
+  const handleBuy = (id: string) => {
+    const item = shopItems.find((i) => i.id === id);
+    if (!item) return;
+    if (!window.confirm("¿Estás seguro de comprar?")) return;
+    if (money < item.price) {
+      alert("No tienes suficiente dinero");
+      return;
+    }
+    const spent = coinsSpent + item.price;
+    setCoinsSpent(spent);
+    localStorage.setItem("coinsSpent", String(spent));
+  };
+
   const handleAButton = () => {
+    if (visible) {
+      if (audioIndex === 0) setVolume(Math.max(0, volume - 0.1));
+      else if (audioIndex === 1) setVolume(Math.min(1, volume + 0.1));
+      else if (audioIndex === 2) setVolume(0);
+      else setShowSoundModal(false);
+      return;
+    }
+
+    if (shopVisible) {
+      if (shopIndex === shopItems.length) {
+        setShopVisible(false);
+        setScreen("main");
+      } else {
+        handleBuy(shopItems[shopIndex].id);
+      }
+      return;
+    }
+
     if (selectedIcon === "settings") {
       setShowSoundModal(true);
+      setAudioIndex(0);
       return;
     }
 
     if (selectedIcon === "shop") {
       setShopVisible(true);
+      setShopIndex(0);
       return;
     }
 
@@ -242,7 +302,12 @@ export default function NoaTamagotchi() {
 
   const handleBack = () => {
     if (noaDead) return;
-    if (screen === "menu") {
+    if (shopVisible) {
+      setShopVisible(false);
+      setScreen("main");
+    } else if (visible) {
+      setShowSoundModal(false);
+    } else if (screen === "menu") {
       setScreen("main");
     } else if (screen === "catch" || screen === "space") {
       setScreen("menu");
@@ -485,12 +550,16 @@ const startSelectedGame = () => {
         )}
 
         {/* Iconos inferiores */}
+        {screen === "main" && (
         <div className="absolute bottom-2 left-2 right-2 flex justify-between z-20">
           <div
             className={`w-8 h-8 pixel-art cursor-pointer flex items-center justify-center ${
               selectedIcon === "shop" ? "ring-2 ring-white animate-pulse" : ""
             }`}
-            onClick={() => setShopVisible(true)}
+            onClick={() => {
+              setShopIndex(0);
+              setShopVisible(true);
+            }}
           >
             <img src="/images/tienda.png" alt="Shop" className="w-full h-full" />
           </div>
@@ -498,23 +567,36 @@ const startSelectedGame = () => {
             className={`w-8 h-8 pixel-art cursor-pointer flex items-center justify-center ${
               selectedIcon === "settings" ? "ring-2 ring-white animate-pulse" : ""
             }`}
-            onClick={() => setShowSoundModal(true)}
+            onClick={() => {
+              setAudioIndex(0);
+              setShowSoundModal(true);
+            }}
           >
             <img src="/images/ajustes.png" alt="Config" className="w-full h-full" />
           </div>
         </div>
+        )}
 
         <AudioSettingsModal
           visible={visible}
-          onClose={() => setShowSoundModal(false)}
+          onClose={() => {
+            setShowSoundModal(false);
+            setAudioIndex(0);
+          }}
           volume={volume}
           onVolumeChange={setVolume}
           onMute={() => setVolume(0)}
+          selectedIndex={audioIndex}
         />
         <ShopModal
           visible={shopVisible}
-          onClose={() => setShopVisible(false)}
-          onBuy={(id) => console.log("buy", id)}
+          onClose={() => {
+            setShopVisible(false);
+            setShopIndex(0);
+          }}
+          onBuy={handleBuy}
+          selectedIndex={shopIndex}
+          money={money}
         />
       </div>
       {/* -------------------- CONTROLES -------------------- */}
@@ -537,7 +619,15 @@ const startSelectedGame = () => {
           onStart={handleStart}
           onStartGame={startSelectedGame}
           onMove={(dir) => {
-            if (screen === "menu") {
+            if (visible) {
+              const max = 3;
+              if (dir === "left") setAudioIndex((i) => (i - 1 + max + 1) % (max + 1));
+              else if (dir === "right") setAudioIndex((i) => (i + 1) % (max + 1));
+            } else if (shopVisible) {
+              const max = shopItems.length;
+              if (dir === "up") setShopIndex((i) => (i - 1 + max + 1) % (max + 1));
+              else if (dir === "down") setShopIndex((i) => (i + 1) % (max + 1));
+            } else if (screen === "menu") {
               changeMenuSelection(dir === "left" ? "left" : "right");
             } else if (screen === "main") {
               const icons = ["shop", "settings"] as const;
@@ -562,7 +652,7 @@ const startSelectedGame = () => {
           onBack={handleBack}
           isSleeping={isSleeping || noaDead}
           isStarting={screen === "start"}
-          inMenu={["menu", "catch", "space"].includes(screen)}
+          inMenu={["menu", "catch", "space"].includes(screen) || shopVisible || visible}
         />
       </div>
     </div>
