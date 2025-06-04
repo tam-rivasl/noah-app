@@ -126,7 +126,7 @@ export default function MiniGameCatch({ onExit, moveCommand, startCommand }: Min
     if (!started && currentLine >= instructions.length && startCommand) {
       setStarted(true);
     }
-  }, [startCommand, started, currentLine, instructions.length]);
+  }, [startCommand, started]);
 
   // -------------- Manejo de D-Pad --------------
   useEffect(() => {
