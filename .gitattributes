@@ -1,8 +1,0 @@
-\# filter=lfs diff=lfs merge=lfs -text
-u filter=lfs diff=lfs merge=lfs -text
-otros filter=lfs diff=lfs merge=lfs -text
-tipos filter=lfs diff=lfs merge=lfs -text
-de filter=lfs diff=lfs merge=lfs -text
-archivo filter=lfs diff=lfs merge=lfs -text
-*.png filter=lfs diff=lfs merge=lfs -text
-*.mp3 filter=lfs diff=lfs merge=lfs -text
