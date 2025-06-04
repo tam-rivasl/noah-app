@@ -8,6 +8,7 @@ interface MiniGameSpaceProps {
   onExit: () => void;
   moveCommand: "left" | "right" | "up" | "down" | null;
   startCommand: boolean;
+  onGameEnd?: (score: number, result: "win" | "lose") => void;
 }
 
 interface Meteor {
@@ -30,6 +31,7 @@ const INITIAL_SPEED = 4;                 // px por tick
 const MAX_SPEED = 10;                    // px por tick
 const SPEED_INCREASE_INTERVAL = 10000;   // cada 10 s
 const SPAWN_DECREASE_AMOUNT = 150;       // cada 10 s se reduce 150 ms
+const WIN_TIME = 60000;
 
 export default function MiniGameSpace({ onExit, moveCommand, startCommand }: MiniGameSpaceProps) {
   const [started, setStarted] = useState(false);
@@ -37,6 +39,7 @@ export default function MiniGameSpace({ onExit, moveCommand, startCommand }: Min
   // Iniciamos a Noa centrado horizontalmente
   const [playerX, setPlayerX] = useState((CANVAS_WIDTH - PLAYER_WIDTH) / 2);
   const [gameOver, setGameOver] = useState(false);
+  const [gameWon, setGameWon] = useState(false);
   const [elapsed, setElapsed] = useState(0);
 
   const startRef = useRef<number>(0);
@@ -74,6 +77,12 @@ export default function MiniGameSpace({ onExit, moveCommand, startCommand }: Min
     const updated = [...records, newRecord].sort((a, b) => b.score - a.score).slice(0, 10);
     setRecords(updated);
     localStorage.setItem("spaceRecords", JSON.stringify(updated));
+  }, [gameOver]);
+
+  useEffect(() => {
+    if (gameOver && onGameEnd) {
+      onGameEnd(Math.floor(elapsed / 1000), gameWon ? "win" : "lose");
+    }
   }, [gameOver]);
 
   // ——— Instrucciones para “typewriter” ———
@@ -164,6 +173,11 @@ export default function MiniGameSpace({ onExit, moveCommand, startCommand }: Min
       const total = now - startRef.current;
       setElapsed(total);
 
+      if (total >= WIN_TIME) {
+        setGameWon(true);
+        setGameOver(true);
+      }
+
       const factor = Math.floor(total / SPEED_INCREASE_INTERVAL);
       speedRef.current = Math.min(INITIAL_SPEED + factor * 1, MAX_SPEED);
       spawnIntervalRef.current = Math.max(
@@ -197,6 +211,7 @@ export default function MiniGameSpace({ onExit, moveCommand, startCommand }: Min
     scheduleNextMeteor();
 
     const loop = setInterval(() => {
+      if (gameOver) return;
       setMeteors((prev) => {
         const next: Meteor[] = [];
         let collided = false;
@@ -341,7 +356,9 @@ export default function MiniGameSpace({ onExit, moveCommand, startCommand }: Min
               height={48}
               className="pixel-art mb-2"
             />
-            <p className="text-[12px] font-bold mb-1">¡BOOM! Perdiste 🚀</p>
+            <p className="text-[12px] font-bold mb-1">
+              {gameWon ? "¡Ganaste!" : "¡BOOM! Perdiste 🚀"}
+            </p>
             <button
               onClick={() => setViewingRecords(true)}
               className="bg-gray-700 hover:bg-gray-600 transition-transform duration-200 active:scale-95 text-[10px] px-2 py-1 rounded mb-2"

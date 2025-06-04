@@ -7,6 +7,7 @@ interface MiniGameCatchProps {
   onExit: () => void;
   moveCommand: "left" | "right" | "up" | "down" | null;
   startCommand: boolean;
+  onGameEnd?: (score: number, result: "win" | "lose") => void;
 }
 
 interface Obstacle {
@@ -22,6 +23,7 @@ const OBSTACLE_BASE = 32;      // tamaño base de obstáculo en px
 const JUMP_HEIGHT = 80;        // píxeles de salto sobre groundOffset
 const GAME_INTERVAL = 50;      // ms (~20 FPS)
 const LANDING_GRACE_TIME = 90; // ms de gracia tras aterrizar
+const WIN_TIME = 60000;        // 60 segundos para ganar
 
 // Factor de reducción para la hitbox horizontal (tanto de Noa como de obstáculos)
 const HORIZONTAL_SHRINK = 0.20; // 20%
@@ -49,6 +51,7 @@ export default function MiniGameCatch({ onExit, moveCommand, startCommand }: Min
   const [obstacles, setObstacles] = useState<Obstacle[]>([]);
   const [score, setScore] = useState(0);
   const [gameOver, setGameOver] = useState(false);
+  const [gameWon, setGameWon] = useState(false);
   const [buffActive, setBuffActive] = useState(false);
   const [landingGrace, setLandingGrace] = useState(false);
 
@@ -159,6 +162,11 @@ export default function MiniGameCatch({ onExit, moveCommand, startCommand }: Min
 
       if (gameOver) return;
       const elapsed = now - startTimeRef.current;
+      if (elapsed >= WIN_TIME) {
+        setGameWon(true);
+        setGameOver(true);
+        return;
+      }
 
       // 1) Velocidad
       const baseSpeed = 0.15 + 0.025 * Math.floor(elapsed / 10000);
@@ -255,6 +263,12 @@ export default function MiniGameCatch({ onExit, moveCommand, startCommand }: Min
 // —————————————— Nuevo estado: records y vista de records ——————————————
   const [records, setRecords] = useState<RecordEntry[]>([]);
   const [viewingRecords, setViewingRecords] = useState(false);
+
+  useEffect(() => {
+    if (gameOver && onGameEnd) {
+      onGameEnd(score, gameWon ? "win" : "lose");
+    }
+  }, [gameOver]);
 
   // Al montar, cargamos de localStorage (sólo una vez):
   useEffect(() => {
@@ -422,7 +436,9 @@ export default function MiniGameCatch({ onExit, moveCommand, startCommand }: Min
               alt="Noa triste"
               className="w-[62px] h-[62px] mb-1"
             />
-            <p className="text-sm font-normal mb-1">¡Game Over!</p>
+            <p className="text-sm font-normal mb-1">
+              {gameWon ? "¡Ganaste!" : "¡Game Over!"}
+            </p>
             <p className="text-[10px] mb-2">Puntuación final: {score}</p>
             <button
               onClick={() => setViewingRecords(true)}
