@@ -7,6 +7,9 @@ import NoaWalking from "./noa-walking";
 import NoaEating from "./noa-eating";
 import NoaSleeping from "./noa-sleeping";
 import { NoaPetting } from "./noa-petting";
+import VolumeMenu from "./volume-menu";
+import StoreModal from "./store-modal";
+import { useAudio } from "./audio-provider";
 
 // Importa tus minijuegos:
 import MiniGameCatch from "./mini-game-catch";
@@ -34,10 +37,12 @@ export default function NoaTamagotchi() {
   const [moveCommand, setMoveCommand] = useState<"left" | "right" | "up" | "down" | null>(null);
   const [startCommand, setStartCommand] = useState(false);
   const [selectedMenuIndex, setSelectedMenuIndex] = useState(0);
-  const menuOptions: ("catch" | "space")[] = ["catch", "space"];
+  const menuOptions: ("catch" | "space" | "store")[] = ["catch", "space", "store"];
   const [time, setTime] = useState(new Date());
   const [backgroundImage, setBackgroundImage] = useState<string>("/images/back-grounds/day.png");
   const [noaDead, setNoaDead] = useState(false);
+  const [points, setPoints] = useState(() => Number(localStorage.getItem("noaPoints") || 0));
+  const [showVolume, setShowVolume] = useState(false);
 
   // —————————————————————————————————————————————————
   // 1) Cargar estado guardado
@@ -61,6 +66,11 @@ export default function NoaTamagotchi() {
   useEffect(() => {
     localStorage.setItem("noaState", JSON.stringify({ ...noaState, lastUpdated: Date.now() }));
   }, [noaState]);
+
+  // Guardar puntos
+  useEffect(() => {
+    localStorage.setItem("noaPoints", points.toString());
+  }, [points]);
 
   // 3) Decaimiento de stats cada minuto
   useEffect(() => {
@@ -201,6 +211,7 @@ export default function NoaTamagotchi() {
     if (screen === "start") {
       setScreen("main");
     } else if (screen === "main") {
+      playEffect("/audio/open-menu.mp3");
       setScreen("menu");
     }
   };
@@ -217,11 +228,29 @@ export default function NoaTamagotchi() {
   // === iniciar el minijuego seleccionado
   const startSelectedGame = () => {
     if (noaDead || isSleeping) return; // bloqueamos si duerme o está muerto
-    gaming(); // Aumenta stats al entrar
-    setScreen(menuOptions[selectedMenuIndex]);
+    const target = menuOptions[selectedMenuIndex];
+    if (target === "store") {
+      playEffect("/audio/open-menu.mp3");
+      setScreen("store");
+    } else {
+      gaming();
+      setScreen(target);
+    }
   };
 
+  const { playEffect, playMusic, stopMusic } = useAudio();
+
+  const handleGameEnd = useCallback(
+    (score: number, result: "win" | "lose") => {
+      setPoints((p) => p + score);
+      playEffect(result === "win" ? "/audio/victory.mp3" : "/audio/lose.mp3");
+      stopMusic();
+    },
+    [playEffect, stopMusic]
+  );
+
   const changeMenuSelection = (dir: "left" | "right") => {
+    playEffect("/audio/select.mp3");
     setSelectedMenuIndex((i) =>
       dir === "left"
         ? (i - 1 + menuOptions.length) % menuOptions.length
@@ -239,6 +268,16 @@ export default function NoaTamagotchi() {
   }, [noaState]);
 
   const emotion = getEmotional();
+
+  useEffect(() => {
+    if (screen === "catch") {
+      playMusic("/audio/catch-theme.mp3");
+    } else if (screen === "space") {
+      playMusic("/audio/space-theme.mp3");
+    } else {
+      stopMusic();
+    }
+  }, [screen, playMusic, stopMusic]);
 
   return (
     <div className="gameboy">
@@ -275,8 +314,13 @@ export default function NoaTamagotchi() {
               <div className="w-full flex justify-center">
                 <StatusBars noaState={noaState} />
               </div>
-              <div className="pixel-font text-xs text-white bg-black px-1 py-0.5 rounded border border-white shadow-[2px_2px_0_#444]">
-                {time.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+              <div className="flex justify-between w-full text-xs text-white">
+                <span className="pixel-font bg-black px-1 py-0.5 rounded border border-white shadow-[2px_2px_0_#444]">
+                  {time.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                </span>
+                <span className="pixel-font bg-black px-1 py-0.5 rounded border border-white shadow-[2px_2px_0_#444]">
+                  Puntos: {points}
+                </span>
               </div>
             </div>
 
@@ -346,7 +390,9 @@ export default function NoaTamagotchi() {
                         selectedMenuIndex === idx ? "bg-white text-black" : "bg-black/30"
                       } pixel-font`}
                     >
-                      {opt === "catch" ? "Saltin rebotin" : "☄️ Meteoritos"}
+                      {opt === "catch" && "Saltin rebotin"}
+                      {opt === "space" && "☄️ Meteoritos"}
+                      {opt === "store" && "🛒 Tienda"}
                     </button>
                   ))}
                 </div>
@@ -360,12 +406,22 @@ export default function NoaTamagotchi() {
 
         {/* === MiniGameCatch === */}
         {screen === "catch" && !noaDead && !isSleeping && (
-          <MiniGameCatch onExit={handleBack} moveCommand={moveCommand} startCommand={startCommand} />
+          <MiniGameCatch
+            onExit={handleBack}
+            moveCommand={moveCommand}
+            startCommand={startCommand}
+            onGameEnd={handleGameEnd}
+          />
         )}
 
         {/* === MiniGameSpace === */}
         {screen === "space" && !noaDead && !isSleeping && (
-          <MiniGameSpace onExit={handleBack} moveCommand={moveCommand} startCommand={startCommand} />
+          <MiniGameSpace
+            onExit={handleBack}
+            moveCommand={moveCommand}
+            startCommand={startCommand}
+            onGameEnd={handleGameEnd}
+          />
         )}
 
         {/* === Game Over (Tamagotchi) === */}
@@ -408,10 +464,24 @@ export default function NoaTamagotchi() {
             handleMove(dir);
           }}
           onBack={handleBack}
+          onToggleVolume={() => setShowVolume((v) => !v)}
           isSleeping={isSleeping || noaDead}
           isStarting={screen === "start"}
           inMenu={["menu", "catch", "space"].includes(screen)}
         />
+        {showVolume && <VolumeMenu onClose={() => setShowVolume(false)} />}
+        {screen === "store" && (
+          <StoreModal
+            points={points}
+            onClose={() => setScreen("menu")}
+            onPurchase={(cost, apply) => {
+              if (points >= cost) {
+                setPoints((p) => p - cost);
+                setNoaState((s) => apply(s));
+              }
+            }}
+          />
+        )}
       </div>
     </div>
   );
