@@ -12,6 +12,7 @@ interface ActionButtonsProps {
   onMove: (direction: "left" | "right" | "up" | "down") => void;
   onBack: () => void;
   onStartGame: () => void;
+  onToggleVolume: () => void;
   isSleeping: boolean;
   isStarting: boolean;
   inMenu: boolean;
@@ -25,6 +26,7 @@ export default function ActionButtons({
   onStart,
   onMove,
   onBack,
+  onToggleVolume,
   isSleeping,
   isStarting,
   inMenu,
@@ -135,19 +137,27 @@ export default function ActionButtons({
         SLEEP
       </button>
 
-      {/* Start y Reset */}
-      <div className="flex gap-6 mt-3">
+      {/* Start, Vol y Reset */}
+      <div className="flex gap-4 mt-3">
         <button
           onClick={() => handleAction("start", onStart)}
-          className="px-5 py-1 rounded-lg bg-gray-400 shadow-[inset_0_1px_2px_rgba(255,255,255,0.5),0_2px_0px_rgba(0,0,0,0.5)] 
+          className="px-5 py-1 rounded-lg bg-gray-400 shadow-[inset_0_1px_2px_rgba(255,255,255,0.5),0_2px_0px_rgba(0,0,0,0.5)]
                      hover:brightness-110 text-black text-xs font-bold pixel-font"
         >
           START
         </button>
 
         <button
+          onClick={() => handleAction("vol", onToggleVolume)}
+          className="px-5 py-1 rounded-lg bg-gray-400 shadow-[inset_0_1px_2px_rgba(255,255,255,0.5),0_2px_0px_rgba(0,0,0,0.5)]
+                     hover:brightness-110 text-black text-xs font-bold pixel-font"
+        >
+          VOL
+        </button>
+
+        <button
           onClick={onReset}
-          className="px-5 py-1 rounded-lg bg-gray-400 shadow-[inset_0_1px_2px_rgba(255,255,255,0.5),0_2px_0px_rgba(0,0,0,0.5)] 
+          className="px-5 py-1 rounded-lg bg-gray-400 shadow-[inset_0_1px_2px_rgba(255,255,255,0.5),0_2px_0px_rgba(0,0,0,0.5)]
                      hover:brightness-110 text-black text-xs font-bold pixel-font"
         >
           Reset
