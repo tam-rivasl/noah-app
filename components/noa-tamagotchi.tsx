@@ -553,8 +553,8 @@ const startSelectedGame = () => {
         {screen === "main" && (
         <div className="absolute bottom-2 left-2 right-2 flex justify-between z-20">
           <div
-            className={`w-8 h-8 pixel-art cursor-pointer flex items-center justify-center ${
-              selectedIcon === "shop" ? "ring-2 ring-white animate-pulse" : ""
+            className={`w-[30px] h-[30px] pixel-art cursor-pointer flex items-center justify-center ${
+              selectedIcon === "shop" ? "animate-pulse" : ""
             }`}
             onClick={() => {
               setShopIndex(0);
@@ -563,9 +563,9 @@ const startSelectedGame = () => {
           >
             <img src="/images/tienda.png" alt="Shop" className="w-full h-full" />
           </div>
-          <div
-            className={`w-8 h-8 pixel-art cursor-pointer flex items-center justify-center ${
-              selectedIcon === "settings" ? "ring-2 ring-white animate-pulse" : ""
+          <div 
+            className={`w-[30px] h-[30px] pixel-art cursor-pointer flex items-center justify-center ${
+              selectedIcon === "settings" ? " animate-pulse" : ""
             }`}
             onClick={() => {
               setAudioIndex(0);
@@ -652,7 +652,7 @@ const startSelectedGame = () => {
           onBack={handleBack}
           isSleeping={isSleeping || noaDead}
           isStarting={screen === "start"}
-          inMenu={["menu", "catch", "space"].includes(screen)}
+          inMenu={["menu", "catch", "space"].includes(screen) || shopVisible || visible}
         />
       </div>
     </div>
