@@ -4,20 +4,26 @@ import React from "react";
 
 type AudioSettingsModalProps = {
   visible: boolean;
-  onClose: () => void;
   volume: number;
   onVolumeChange: (newVolume: number) => void;
   onMute: () => void;
+  bgmEnabled: boolean;
+  onToggleBgm: () => void;
+  sfxEnabled: boolean;
+  onToggleSfx: () => void;
   /** índice seleccionado para navegación con D‑Pad */
   selectedIndex: number;
-};
+}; 
 
 export default function AudioSettingsModal({
   visible,
-  onClose,
   volume,
   onVolumeChange,
   onMute,
+  bgmEnabled,
+  onToggleBgm,
+  sfxEnabled,
+  onToggleSfx,
   selectedIndex,
 }: AudioSettingsModalProps) {
   if (!visible) return null;
@@ -59,19 +65,25 @@ export default function AudioSettingsModal({
             >
               🔇 Mute
             </button>
+            <button
+              onClick={onToggleBgm}
+              className={`bg-purple-500 text-black px-2 py-1 border border-white hover:bg-purple-300 ${
+                selectedIndex === 3 ? "ring-2 ring-white" : ""
+              }`}
+            >
+              {bgmEnabled ? "🎵 ON" : "🎵 OFF"}
+            </button>
+            <button
+              onClick={onToggleSfx}
+              className={`bg-purple-500 text-black px-2 py-1 border border-white hover:bg-purple-300 ${
+                selectedIndex === 4 ? "ring-2 ring-white" : ""
+              }`}
+            >
+              {sfxEnabled ? "🎶 ON" : "🎶 OFF"}
+            </button>
           </div>
         </div>
-
-        <div className="text-center">
-          <button
-            onClick={onClose}
-            className={`bg-red-600 px-4 py-1 text-xs border border-white hover:bg-red-400 ${
-              selectedIndex === 3 ? "ring-2 ring-white" : ""
-            }`}
-          >
-            ✖️ Cerrar
-          </button>
-        </div>
+        <p className="text-xs text-center">B = Volver</p>
       </div>
     </div>
   );
