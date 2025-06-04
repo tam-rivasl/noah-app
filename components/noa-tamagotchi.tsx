@@ -28,16 +28,27 @@ const initialState: NoaState = {
 
 export default function NoaTamagotchi() {
   const [noaState, setNoaState] = useState<NoaState>(initialState);
-  const [currentAction, setCurrentAction] = useState<"eating" | "petting" | "gaming" | null>(null);
+  const [currentAction, setCurrentAction] = useState<
+    "eating" | "petting" | "gaming" | null
+  >(null);
   const [isSleeping, setIsSleeping] = useState(false);
-  const [screen, setScreen] = useState<"start" | "main" | "menu" | "catch" | "space">("start");
-  const [moveCommand, setMoveCommand] = useState<"left" | "right" | "up" | "down" | null>(null);
+  const [screen, setScreen] = useState<
+    "start" | "main" | "menu" | "catch" | "space"
+  >("start");
+  const [moveCommand, setMoveCommand] = useState<
+    "left" | "right" | "up" | "down" | null
+  >(null);
   const [startCommand, setStartCommand] = useState(false);
   const [selectedMenuIndex, setSelectedMenuIndex] = useState(0);
   const menuOptions: ("catch" | "space")[] = ["catch", "space"];
   const [time, setTime] = useState(new Date());
-  const [backgroundImage, setBackgroundImage] = useState<string>("/images/back-grounds/day.png");
+  const [backgroundImage, setBackgroundImage] = useState<string>(
+    "/images/back-grounds/day.png"
+  );
   const [noaDead, setNoaDead] = useState(false);
+  const [showSoundModal, setShowSoundModal] = useState(false);
+  const [volume, setVolume] = useState(1); // de 0.0 a 1.0
+  const [selectedIcon, setSelectedIcon] = useState<"none" | "settings">("none");
 
   // —————————————————————————————————————————————————
   // 1) Cargar estado guardado
@@ -59,7 +70,10 @@ export default function NoaTamagotchi() {
 
   // 2) Guardar estado al cambiar
   useEffect(() => {
-    localStorage.setItem("noaState", JSON.stringify({ ...noaState, lastUpdated: Date.now() }));
+    localStorage.setItem(
+      "noaState",
+      JSON.stringify({ ...noaState, lastUpdated: Date.now() })
+    );
   }, [noaState]);
 
   // 3) Decaimiento de stats cada minuto
@@ -122,11 +136,13 @@ export default function NoaTamagotchi() {
     }
   }, [noaState.energy, isSleeping]);
 
-
-
   // 9) Morir si toda las stat llegan a  0
   useEffect(() => {
-    if (noaState.hunger === 0 && noaState.happiness === 0 && noaState.energy === 0) {
+    if (
+      noaState.hunger === 0 &&
+      noaState.happiness === 0 &&
+      noaState.energy === 0
+    ) {
       setNoaDead(true);
       setCurrentAction(null);
       setIsSleeping(false);
@@ -215,11 +231,17 @@ export default function NoaTamagotchi() {
   };
 
   // === iniciar el minijuego seleccionado
-  const startSelectedGame = () => {
-    if (noaDead || isSleeping) return; // bloqueamos si duerme o está muerto
-    gaming(); // Aumenta stats al entrar
-    setScreen(menuOptions[selectedMenuIndex]);
-  };
+const startSelectedGame = () => {
+  if (selectedIcon === "settings") {
+    setShowSoundModal(true);
+    return;
+  }
+
+  if (noaDead || isSleeping) return;
+  gaming();
+  setScreen(menuOptions[selectedMenuIndex]);
+};
+
 
   const changeMenuSelection = (dir: "left" | "right") => {
     setSelectedMenuIndex((i) =>
@@ -242,10 +264,12 @@ export default function NoaTamagotchi() {
 
   // 10) Control de música de fondo
   useEffect(() => {
-    const normalBgm = document.getElementById('normal-bgm') as HTMLAudioElement;
-    const warningBgm = document.getElementById('warning-bgm') as HTMLAudioElement;
+    const normalBgm = document.getElementById("normal-bgm") as HTMLAudioElement;
+    const warningBgm = document.getElementById(
+      "warning-bgm"
+    ) as HTMLAudioElement;
 
-    if (emotion === 'normal') {
+    if (emotion === "normal") {
       normalBgm.play();
       warningBgm.pause();
     } else {
@@ -261,15 +285,32 @@ export default function NoaTamagotchi() {
 
   // 11) Control de sonido de advertencia
   useEffect(() => {
-    const warningSound = document.getElementById('warning-sound') as HTMLAudioElement;
+    const warningSound = document.getElementById(
+      "warning-sound"
+    ) as HTMLAudioElement;
 
-    if (emotion !== 'normal') {
+    if (emotion !== "normal") {
       warningSound.play();
     } else {
       warningSound.pause();
     }
-    return () => { warningSound.pause(); };
+    return () => {
+      warningSound.pause();
+    };
   }, [emotion]);
+  // Aplicar el volumen a todos los sonidos
+  useEffect(() => {
+    const allSounds = [
+      document.getElementById("normal-bgm") as HTMLAudioElement,
+      document.getElementById("warning-bgm") as HTMLAudioElement,
+      document.getElementById("warning-sound") as HTMLAudioElement,
+    ];
+    allSounds.forEach((audio) => {
+      if (audio) {
+        audio.volume = volume;
+      }
+    });
+  }, [volume]);
 
   return (
     <div className="gameboy">
@@ -297,7 +338,9 @@ export default function NoaTamagotchi() {
         {/* === Press Start === */}
         {screen === "start" && !noaDead && (
           <div className="gameboy-top2 flex flex-col items-center justify-end h-full">
-            <p className="press-start-text animate-blink pixel-font">Press Start</p>
+            <p className="press-start-text animate-blink pixel-font">
+              Press Start
+            </p>
           </div>
         )}
 
@@ -310,7 +353,10 @@ export default function NoaTamagotchi() {
                 <StatusBars noaState={noaState} />
               </div>
               <div className="pixel-font text-xs text-white bg-black px-1 py-0.5 rounded border border-white shadow-[2px_2px_0_#444]">
-                {time.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                {time.toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
               </div>
             </div>
 
@@ -360,12 +406,15 @@ export default function NoaTamagotchi() {
             style={{ backdropFilter: "blur(2px)" }}
           >
             {isSleeping ? (
-               <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/50 z-30">
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/50 z-30">
                 <div
                   className="pixel-font text-red-400 text-[10px] px-2 py-1 border border-red-400 rounded animate-shake"
                   style={{ backgroundColor: "rgba(0,0,0,0.7)" }}
                 >
-                   <p className="pixel-font text-[12px]"> 💤 Noah está durmiendo… vuelve luego 💤</p>
+                  <p className="pixel-font text-[12px]">
+                    {" "}
+                    💤 Noah está durmiendo… vuelve luego 💤
+                  </p>
                 </div>
               </div>
             ) : (
@@ -377,7 +426,9 @@ export default function NoaTamagotchi() {
                       key={opt}
                       onClick={() => setScreen(opt)}
                       className={`px-4 py-2 text-sm rounded ${
-                        selectedMenuIndex === idx ? "bg-white text-black" : "bg-black/30"
+                        selectedMenuIndex === idx
+                          ? "bg-white text-black"
+                          : "bg-black/30"
                       } pixel-font`}
                     >
                       {opt === "catch" ? "Saltin rebotin" : "☄️ Meteoritos"}
@@ -394,12 +445,20 @@ export default function NoaTamagotchi() {
 
         {/* === MiniGameCatch === */}
         {screen === "catch" && !noaDead && !isSleeping && (
-          <MiniGameCatch onExit={handleBack} moveCommand={moveCommand} startCommand={startCommand} />
+          <MiniGameCatch
+            onExit={handleBack}
+            moveCommand={moveCommand}
+            startCommand={startCommand}
+          />
         )}
 
         {/* === MiniGameSpace === */}
         {screen === "space" && !noaDead && !isSleeping && (
-          <MiniGameSpace onExit={handleBack} moveCommand={moveCommand} startCommand={startCommand} />
+          <MiniGameSpace
+            onExit={handleBack}
+            moveCommand={moveCommand}
+            startCommand={startCommand}
+          />
         )}
 
         {/* === Game Over (Tamagotchi) === */}
@@ -411,11 +470,58 @@ export default function NoaTamagotchi() {
               className="w-[200px] h-[150px] mb-2 pixel-art"
             />
             <h1 className="text-sm font-bold mb-1 pixel-font">GAME OVER</h1>
-            <p className="text-xs mb-2 pixel-font">Pulsa “RESET” para reiniciar</p>
+            <p className="text-xs mb-2 pixel-font">
+              Pulsa “RESET” para reiniciar
+            </p>
           </div>
         )}
+        {showSoundModal && (
+          <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center z-50 text-white pixel-font p-4">
+            <h2 className="mb-2 text-lg">🎵 Opciones de Sonido</h2>
+            <div className="flex gap-2 mb-4">
+              <button
+                onClick={() => setVolume((v) => Math.max(0, v - 0.1))}
+                className="bg-white text-black px-2 py-1 text-sm"
+              >
+                🔉 Bajar
+              </button>
+              <button
+                onClick={() => setVolume((v) => Math.min(1, v + 0.1))}
+                className="bg-white text-black px-2 py-1 text-sm"
+              >
+                🔊 Subir
+              </button>
+              <button
+                onClick={() => setVolume(0)}
+                className="bg-white text-black px-2 py-1 text-sm"
+              >
+                🔇 Mute
+              </button>
+            </div>
+            <button
+              onClick={() => setShowSoundModal(false)}
+              className="bg-gray-600 px-3 py-1 text-sm rounded"
+            >
+              Cerrar
+            </button>
+          </div>
+        )}
+          {/* Icono de configuración en la parte inferior */}
+      <div className="absolute bottom-2 right-2 z-20">
+        <div
+          className={`w-8 h-8 pixel-art cursor-pointer ${
+            selectedIcon === "settings" ? "ring-2 ring-white" : ""
+          }`}
+          onClick={() => setShowSoundModal(true)}
+        >
+          <img
+            src="/images/ajustes.png"
+            alt="Config"
+            className="w-full h-full"
+          />
+        </div>
       </div>
-
+      </div>
       {/* -------------------- CONTROLES -------------------- */}
       <div className="gameboy-controls">
         <ActionButtons
@@ -438,6 +544,13 @@ export default function NoaTamagotchi() {
           onMove={(dir) => {
             if (screen === "menu") {
               changeMenuSelection(dir === "left" ? "left" : "right");
+            } else if (screen === "main") {
+              // Permitir selección del icono de config
+              if (dir === "right" || dir === "down") {
+                setSelectedIcon("settings");
+              } else {
+                setSelectedIcon("none");
+              }
             }
             handleMove(dir);
           }}
