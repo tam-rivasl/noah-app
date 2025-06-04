@@ -652,7 +652,7 @@ const startSelectedGame = () => {
           onBack={handleBack}
           isSleeping={isSleeping || noaDead}
           isStarting={screen === "start"}
-          inMenu={["menu", "catch", "space"].includes(screen) || shopVisible || visible}
+          inMenu={["menu", "catch", "space"].includes(screen)}
         />
       </div>
     </div>
