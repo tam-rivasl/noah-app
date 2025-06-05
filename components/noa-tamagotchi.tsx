@@ -486,7 +486,7 @@ const startSelectedGame = () => {
             <div className="absolute top-1 left-1 right-1 flex flex-col items-end z-20">
               <div className="w-full flex justify-center">
                 <StatusBars noaState={noaState} />
-                 <div className="pixel-font text-xs text-white  ">
+            <div className="relative z-30 flex flex-col items-center justify-end w-full h-full p-2 pt-16">
                 {time.toLocaleTimeString([], {
                   hour: "2-digit",
                   minute: "2-digit",
