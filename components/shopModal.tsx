@@ -16,8 +16,6 @@ const items = [
   { id: "food", name: "🍗 Comida deliciosa", price: 10 },
   { id: "toy", name: "🧸 Juguete suave", price: 15 },
   { id: "bed", name: "🛏️ Cama nueva cómoda", price: 30 },
-  { id: "hat", name: "🎩 Sombrero estiloso", price: 20 },
-  { id: "snack", name: "🍪 Galleta mágica", price: 5 },
 ];
 
 export default function ShopModal({
@@ -39,7 +37,7 @@ export default function ShopModal({
   const visibleWindow = visibleItems.slice(start, end);
 
   return (
-    <div className="absolute inset-0 bg-black/80 z-50  items-center justify-center p-2 overflow-y-auto">
+    <div className="absolute inset-0 bg-black/80 z-50">
       <div
         className="pixel-font bg-[#301020] text-yellow-200 border-4 border-pink-300 shadow-[6px_6px_0px_#000] p-4 w-full max-w-xs rounded-xl flex flex-col justify-between"
       >
@@ -89,7 +87,6 @@ export default function ShopModal({
                   {selectedItem.id === "exit" ? "A = Salir" : "A = Comprar"}
                 </p>
               )}
-              <p className="text-xs text-pink-300">B = Volver</p>
             </div>
           </div>
         </div>

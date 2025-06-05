@@ -486,17 +486,18 @@ const startSelectedGame = () => {
             <div className="absolute top-1 left-1 right-1 flex flex-col items-end z-20">
               <div className="w-full flex justify-center">
                 <StatusBars noaState={noaState} />
-            <div className="relative z-30 flex flex-col items-center justify-end w-full h-full p-2 pt-16">
+                
+              </div>
+               <div className="pixel-font text-xs text-white  ">
                 {time.toLocaleTimeString([], {
                   hour: "2-digit",
                   minute: "2-digit",
                 })}
               </div>
-              </div>
             </div>
 
             {/* Animación de Noa según estado */}
-            <div className="relative z-10 flex flex-col items-center justify-end w-full h-full p-2 pt-6">
+            <div className="relative z-10 flex flex-col items-center justify-end w-full  p-2 pt-6">
               <div className="relative flex items-end justify-center w-full h-full">
                 {isSleeping ? (
                   <div className="w-[40px] h-[80px]">
@@ -564,9 +565,9 @@ const startSelectedGame = () => {
 
         {/* Iconos inferiores */}
         {screen === "main" && (
-        <div className="absolute bottom-2 left-2 right-2 flex justify-between z-20">
+        <div className="absolute bottom-1 left-1 right-2 flex justify-between z-20">
           <div
-            className={`w-[35px] h-[40px] pixel-art cursor-pointer flex items-center justify-center ${
+            className={`w-[40px] h-[40px] pixel-art cursor-pointer flex items-center justify-center ${
               selectedIcon === "shop" ? "animate-pulse" : ""
             }`}
             onClick={() => {
