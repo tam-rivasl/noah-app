@@ -41,7 +41,7 @@ export default function AudioSettingsModal({
             <button
               onClick={() => onVolumeChange(Math.max(0, volume - 0.1))}
               className={`bg-blue-500 text-black px-2 py-1 border border-blue-400 hover:bg-blue-300 ${
-                selectedIndex === 0 ? "ring-2 ring-white" : ""
+                selectedIndex === 0 ? "ring-2 ring-yellow-300 animate-pixel-fill" : ""
               }`}
             >
               🔉 -
@@ -49,7 +49,7 @@ export default function AudioSettingsModal({
             <button
               onClick={() => onVolumeChange(Math.min(1, volume + 0.1))}
               className={`bg-blue-500 text-black px-2 py-1 border border-blue-400 hover:bg-blue-300 ${
-                selectedIndex === 1 ? "ring-2 ring-white" : ""
+                selectedIndex === 1 ? "ring-2 ring-yellow-300 animate-pixel-fill" : ""
               }`}
             >
               🔊 +
@@ -57,7 +57,7 @@ export default function AudioSettingsModal({
             <button
               onClick={onMute}
               className={`bg-yellow-400 text-black px-2 py-1 border border-blue-400 hover:bg-yellow-300 ${
-                selectedIndex === 2 ? "ring-2 ring-white" : ""
+                selectedIndex === 2 ? "ring-2 ring-yellow-300 animate-pixel-fill" : ""
               }`}
             >
               🔇 Mute
@@ -65,7 +65,7 @@ export default function AudioSettingsModal({
             <button
               onClick={onToggleBgm}
               className={`bg-purple-500 text-black px-2 py-1 border border-blue-400 hover:bg-purple-300 ${
-                selectedIndex === 3 ? "ring-2 ring-white" : ""
+                selectedIndex === 3 ? "ring-2 ring-yellow-300 animate-pixel-fill" : ""
               }`}
             >
               {bgmEnabled ? "🎵 ON" : "🎵 OFF"}
@@ -73,7 +73,7 @@ export default function AudioSettingsModal({
             <button
               onClick={onToggleSfx}
               className={`bg-purple-500 text-black px-2 py-1 border border-blue-400 hover:bg-purple-300 ${
-                selectedIndex === 4 ? "ring-2 ring-white" : ""
+                selectedIndex === 4 ? "ring-2 ring-yellow-300 animate-pixel-fill" : ""
               }`}
             >
               {sfxEnabled ? "🎶 ON" : "🎶 OFF"}

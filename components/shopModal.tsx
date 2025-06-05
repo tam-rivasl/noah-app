@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useRef } from "react";
 
 export type ShopModalProps = {
   visible: boolean;
@@ -28,13 +28,20 @@ export default function ShopModal({
 
   if (!visible) return null;
 
-  const visibleItems = [...shopItems, { id: "exit", name: "✖️ Salir de la tienda", price: 0 }];
+  const visibleItems = [
+    ...shopItems,
+    { id: "exit", name: "✖️ Salir de la tienda", price: 0 },
+  ];
   const selectedItem = visibleItems[selectedIndex];
 
+  const listRef = useRef<HTMLDivElement>(null);
 
-  const start = Math.max(0, selectedIndex - 1);
-  const end = start + 3;
-  const visibleWindow = visibleItems.slice(start, end);
+  useEffect(() => {
+    const itemEl = listRef.current?.children[selectedIndex] as HTMLElement | undefined;
+    if (itemEl) {
+      itemEl.scrollIntoView({ inline: "center", behavior: "smooth" });
+    }
+  }, [selectedIndex]);
 
   return (
     <div className="absolute inset-0 bg-black/80 z-50 flex items-center justify-center p-2 overflow-y-auto">
@@ -60,24 +67,24 @@ export default function ShopModal({
                 <p className="text-xs text-blue-200">A = Sí, B = No</p>
               </div>
             ) : (
-              <div className="space-y-2 overflow-y-auto max-h-60">
-                {visibleWindow.map((item, idx) => {
-                  const actualIndex = start + idx;
-                  return (
-                    <div
-                      key={item.id}
-                      className={`flex justify-between items-center px-3 py-2 bg-[#113] border border-blue-400 rounded transition-all duration-150 ${
-                        selectedIndex === actualIndex ? "ring-2 ring-white bg-blue-800" : ""
-                      }`}
-                    >
-                      <span>{item.name}</span>
-                      {item.id !== "exit" && (
-                        <span className="text-xs">{item.price} 🪙</span>
-                      )}
-                    </div>
-                  );
-                })}
-                {error && <p className="text-red-400 text-xs mt-2">{error}</p>}
+              <div
+                ref={listRef}
+                className="overflow-x-auto flex gap-2 pb-2"
+              >
+                {visibleItems.map((item, idx) => (
+                  <div
+                    key={item.id}
+                    className={`min-w-[90px] flex-shrink-0 flex flex-col items-center px-2 py-2 bg-[#113] border border-blue-400 rounded transition-all duration-150 text-center ${
+                      selectedIndex === idx ? "ring-2 ring-yellow-300 bg-blue-800 animate-pixel-fill" : ""
+                    }`}
+                  >
+                    <span className="text-xs mb-1">{item.name}</span>
+                    {item.id !== "exit" && (
+                      <span className="text-[10px]">{item.price} 🪙</span>
+                    )}
+                  </div>
+                ))}
+                {error && <p className="text-red-400 text-xs ml-2">{error}</p>}
               </div>
             )}
 

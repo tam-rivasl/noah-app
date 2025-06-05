@@ -540,38 +540,47 @@ const startSelectedGame = () => {
           />
         )}
 
-        {/* === MiniGameSpace === */}
-        {screen === "space" && !noaDead && !isSleeping && (
-          <MiniGameSpace
-            onExit={handleBack}
-            moveCommand={moveCommand}
-            startCommand={startCommand}
-          />
-        )}
-
-        {/* === Game Over (Tamagotchi) === */}
-        {noaDead && (
-          <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center text-white pixel-font">
-            <img src="/images/rip.png" alt="ripNoa" className="w-[200px] h-[150px] mb-2 pixel-art" />
-            <h1 className="text-sm font-bold mb-1 pixel-font">GAME OVER</h1>
-            <p className="text-xs mb-2 pixel-font">Pulsa “RESET” para reiniciar</p>
-          </div>
-        )}
-
-        {/* Iconos inferiores */}
-        {screen === "main" && (
-        <div className="absolute bottom-1 left-1 right-2 flex justify-between z-20">
-          <div
-            className={`w-[40px] h-[40px] pixel-art cursor-pointer flex items-center justify-center ${
-              selectedIcon === "shop" ? "animate-pulse" : ""
-            }`}
-            onClick={() => {
-              setShopIndex(0);
-              setShopVisible(true);
-            }}
-          >
-            <img src="/images/icons/shop.png" alt="Shop" className="w-full h-full" />
-          </div>
+          <div className="flex flex-col items-center">
+            <span className="pixel-font text-[8px] leading-none mb-1">Shop</span>
+            <div
+              className={`w-[30px] h-[30px] pixel-art cursor-pointer flex items-center justify-center ${
+                selectedIcon === "shop" ? "animate-bounce-random" : ""
+              }`}
+              onClick={() => {
+                setShopIndex(0);
+                setShopVisible(true);
+              }}
+            >
+              <img src="/images/tienda.png" alt="Shop" className="w-full h-full" />
+            </div>
+          <div className="flex flex-col items-center">
+            <span className="pixel-font text-[8px] leading-none mb-1">Games</span>
+            <div
+              className={`w-[30px] h-[30px] pixel-art cursor-pointer flex items-center justify-center ${
+                selectedIcon === "games" ? "animate-bounce-random" : ""
+              }`}
+              onClick={() => {
+                setGamesVisible(true);
+                setSelectedGameIndex(0);
+              }}
+            >
+              <img src="/images/juegos.png" alt="Games" className="w-full h-full" />
+            </div>
+          <div className="flex flex-col items-center">
+            <span className="pixel-font text-[8px] leading-none mb-1">Settings</span>
+            <div
+              className={`w-[30px] h-[30px] pixel-art cursor-pointer flex items-center justify-center ${
+                selectedIcon === "settings" ? "animate-bounce-random" : ""
+              }`}
+              onClick={() => {
+                setAudioIndex(0);
+                setShowSoundModal(true);
+              }}
+            >
+              <img src="/images/ajustes.png" alt="Config" className="w-full h-full" />
+            </div>
+              if (dir === "left") setShopIndex((i) => (i - 1 + max + 1) % (max + 1));
+              else if (dir === "right") setShopIndex((i) => (i + 1) % (max + 1));
           <div
             className={`w-[25px] h-[25px] pixel-art cursor-pointer flex items-center justify-center ${
               selectedIcon === "games" ? " animate-pulse" : ""

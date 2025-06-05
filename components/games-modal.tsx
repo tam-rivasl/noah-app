@@ -24,8 +24,10 @@ export default function GamesModal({ visible, selectedIndex }: GamesModalProps) 
           {options.map((opt, idx) => (
             <div
               key={opt.id}
-              className={`px-3 py-1 border border-blue-400 rounded bg-[#113] ${
-                selectedIndex === idx ? "ring-2 ring-white bg-blue-800" : ""
+              className={`px-3 py-1 border border-blue-400 rounded bg-[#113] text-center ${
+                selectedIndex === idx
+                  ? "ring-2 ring-yellow-300 bg-blue-800 animate-pixel-fill"
+                  : ""
               }`}
             >
               {opt.label}
