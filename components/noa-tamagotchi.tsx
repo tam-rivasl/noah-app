@@ -486,17 +486,17 @@ const startSelectedGame = () => {
             <div className="absolute top-1 left-1 right-1 flex flex-col items-end z-20">
               <div className="w-full flex justify-center">
                 <StatusBars noaState={noaState} />
-              </div>
-              <div className="pixel-font text-xs text-white bg-black px-1 py-0.5 rounded border border-white shadow-[2px_2px_0_#444]">
+                 <div className="pixel-font text-xs text-white  ">
                 {time.toLocaleTimeString([], {
                   hour: "2-digit",
                   minute: "2-digit",
                 })}
               </div>
+              </div>
             </div>
 
             {/* Animación de Noa según estado */}
-            <div className="relative z-10 flex flex-col items-center justify-end w-full h-full p-2 pt-16">
+            <div className="relative z-10 flex flex-col items-center justify-end w-full h-full p-2 pt-6">
               <div className="relative flex items-end justify-center w-full h-full">
                 {isSleeping ? (
                   <div className="w-[40px] h-[80px]">
@@ -566,7 +566,7 @@ const startSelectedGame = () => {
         {screen === "main" && (
         <div className="absolute bottom-2 left-2 right-2 flex justify-between z-20">
           <div
-            className={`w-[30px] h-[30px] pixel-art cursor-pointer flex items-center justify-center ${
+            className={`w-[35px] h-[40px] pixel-art cursor-pointer flex items-center justify-center ${
               selectedIcon === "shop" ? "animate-pulse" : ""
             }`}
             onClick={() => {
@@ -574,10 +574,10 @@ const startSelectedGame = () => {
               setShopVisible(true);
             }}
           >
-            <img src="/images/tienda.png" alt="Shop" className="w-full h-full" />
+            <img src="/images/icons/shop.png" alt="Shop" className="w-full h-full" />
           </div>
           <div
-            className={`w-[30px] h-[30px] pixel-art cursor-pointer flex items-center justify-center ${
+            className={`w-[25px] h-[25px] pixel-art cursor-pointer flex items-center justify-center ${
               selectedIcon === "games" ? " animate-pulse" : ""
             }`}
             onClick={() => {
@@ -585,10 +585,10 @@ const startSelectedGame = () => {
               setSelectedGameIndex(0);
             }}
           >
-            <img src="/images/juegos.png" alt="Games" className="w-full h-full" />
+            <img src="/images/icons/games.png" alt="Games" className="w-full h-full" />
           </div>
           <div
-            className={`w-[30px] h-[30px] pixel-art cursor-pointer flex items-center justify-center ${
+            className={`w-[30px] h-[40px] pixel-art cursor-pointer flex items-center justify-center ${
               selectedIcon === "settings" ? " animate-pulse" : ""
             }`}
             onClick={() => {
@@ -596,7 +596,7 @@ const startSelectedGame = () => {
               setShowSoundModal(true);
             }}
           >
-            <img src="/images/ajustes.png" alt="Config" className="w-full h-full" />
+            <img src="/images/icons/settings.png" alt="Config" className="w-full h-full" />
           </div>
         </div>
         )}

@@ -27,17 +27,16 @@ export default function PixelStatusBar({ value, maxValue, type }: PixelStatusBar
 
   const totalSegments = 5;
   const filledSegments = Math.ceil((value / maxValue) * totalSegments);
-
   const critical = value <= maxValue * 0.2;
 
   const getColors = () => {
     switch (type) {
       case "hunger":
-        return { bg: "bg-red-700", fill: "bg-red-400", border: "border-red-900", glow: "shadow-red-400" };
+        return { bg: "bg-[#FDEBD2]", fill: "bg-[#F36C75]", border: "border-[#F9D7A0]", glow: "shadow-[#F5C490]" };
       case "happiness":
-        return { bg: "bg-yellow-600", fill: "bg-yellow-300", border: "border-yellow-900", glow: "shadow-yellow-300" };
+        return { bg: "bg-[#FFF3C7]", fill: "bg-[#FFD95C]", border: "border-[#F9D7A0]", glow: "shadow-[#FFE177]" };
       case "energy":
-        return { bg: "bg-blue-700", fill: "bg-blue-400", border: "border-blue-900", glow: "shadow-blue-400" };
+        return { bg: "bg-[#DFF5D1]", fill: "bg-[#A8E6A1]", border: "border-[#F9D7A0]", glow: "shadow-[#A8E6A1]" };
       default:
         return { bg: "bg-gray-400", fill: "bg-gray-200", border: "border-gray-900", glow: "shadow-gray-300" };
     }
@@ -46,24 +45,27 @@ export default function PixelStatusBar({ value, maxValue, type }: PixelStatusBar
   const colors = getColors();
 
   const getIcon = () => {
-    if (type === "hunger") return critical ? "🥄" : "🍴";
-    if (type === "happiness") return critical ? "♡" : "❤️";
-    if (type === "energy") return critical ? "💤" : "⚡";
-    return "❔";
+    const base = "/images/icons";
+    switch (type) {
+      case "hunger":
+        return critical ? `${base}/sad-food.png` : `${base}/food.png`;
+      case "happiness":
+        return critical ? `${base}/sad.png` : `${base}/happy.png`;
+      case "energy":
+        return critical ? `${base}/sad-battery.png` : `${base}/energy.png`;
+      default:
+        return "❔";
+    }
   };
 
   return (
-<div className="flex items-center w-full gap-2 min-h-[24px]">
-{/* Ícono */}
-      <div className="w-5 text-center drop-shadow-md">
-        <span className={`text-sm pixel-font ${colors.glow} ${critical ? "animate-blink" : ""}`}>
-          {getIcon()}
-        </span>
+    <div className="flex  w-full min-h-[1px] ">
+      <div className="w-6 h-6 text-center drop-shadow-md">
+        <img src={getIcon()} alt={type} className={`w-[20px] h-[20px] ${critical ? "animate-blink" : ""}`} />
       </div>
 
-      {/* Barra de bloques */}
       <div
-        className={`relative flex-1 h-4 border-2 ${colors.border} ${colors.bg} rounded-sm overflow-hidden 
+        className={`relative flex-1 h-5 border-2 ${colors.border} ${colors.bg} rounded-sm overflow-hidden 
           ${isAnimating ? "animate-pixel-fill" : ""} 
           ${colors.glow}`}
       >
@@ -73,14 +75,13 @@ export default function PixelStatusBar({ value, maxValue, type }: PixelStatusBar
               key={index}
               className={`flex-1 h-full ${
                 index < filledSegments ? colors.fill : "bg-white"
-              } ${index !== totalSegments - 1 ? "border-r border-black/20" : ""}`}
+              } ${index !== totalSegments - 1 ? "border-r border-black/10" : ""}`}
             />
           ))}
         </div>
 
-        {/* % encima */}
         <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-[8px] font-bold text-black pixel-font drop-shadow-md">
+          <span className="text-[10px] font-bold text-black pixel-font drop-shadow-md">
             {Math.round(value)}%
           </span>
         </div>
