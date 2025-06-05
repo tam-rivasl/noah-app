@@ -12,7 +12,7 @@ export type ShopModalProps = {
   error: string | null;
 };
 
-const items = [
+export const shopItems = [
   { id: "food", name: "🍗 Comida deliciosa", price: 10 },
   { id: "toy", name: "🧸 Juguete suave", price: 15 },
   { id: "bed", name: "🛏️ Cama nueva cómoda", price: 30 },
@@ -28,7 +28,7 @@ export default function ShopModal({
 
   if (!visible) return null;
 
-  const visibleItems = [...items, { id: "exit", name: "✖️ Salir de la tienda", price: 0 }];
+  const visibleItems = [...shopItems, { id: "exit", name: "✖️ Salir de la tienda", price: 0 }];
   const selectedItem = visibleItems[selectedIndex];
 
 
@@ -37,16 +37,16 @@ export default function ShopModal({
   const visibleWindow = visibleItems.slice(start, end);
 
   return (
-    <div className="absolute inset-0 bg-black/80 z-50">
+    <div className="absolute inset-0 bg-black/80 z-50 flex items-center justify-center p-2 overflow-y-auto">
       <div
-        className="pixel-font bg-[#301020] text-yellow-200 border-4 border-pink-300 shadow-[6px_6px_0px_#000] p-4 w-full max-w-xs rounded-xl flex flex-col justify-between"
+        className="pixel-font bg-[#001] text-blue-200 border-4 border-blue-400 shadow-[6px_6px_0px_#000] p-4 w-full max-w-xs rounded-xl flex flex-col justify-between"
       >
         <div className="flex flex-col gap-2 overflow-hidden h-full">
           <div className="flex-shrink-0">
-            <h2 className="text-lg border-b-2 border-pink-300 pb-1 text-pink-200 text-center">
+            <h2 className="text-lg border-b-2 border-blue-400 pb-1 text-blue-200 text-center">
               🛍️ Tienda Pixel
             </h2>
-            <div className="text-center text-xs bg-pink-900 py-1 px-2 rounded mb-1">
+            <div className="text-center text-xs bg-blue-900 py-1 px-2 rounded mb-1">
               💰 Dinero disponible: <strong>{money}</strong> 🪙
             </div>
           </div>
@@ -55,9 +55,9 @@ export default function ShopModal({
             {confirming ? (
               <div className="text-center space-y-2">
                 <p>
-                  ¿Comprar <strong>{items.find((i) => i.id === confirming)?.name}</strong> por {items.find((i) => i.id === confirming)?.price} 🪙?
+                  ¿Comprar <strong>{shopItems.find((i) => i.id === confirming)?.name}</strong> por {shopItems.find((i) => i.id === confirming)?.price} 🪙?
                 </p>
-                <p className="text-xs text-pink-300">A = Sí, B = No</p>
+                <p className="text-xs text-blue-200">A = Sí, B = No</p>
               </div>
             ) : (
               <div className="space-y-2 overflow-y-auto max-h-60">
@@ -66,8 +66,8 @@ export default function ShopModal({
                   return (
                     <div
                       key={item.id}
-                      className={`flex justify-between items-center px-3 py-2 bg-[#502030] border border-pink-300 rounded transition-all duration-150 ${
-                        selectedIndex === actualIndex ? "ring-2 ring-pink-200 bg-pink-800" : ""
+                      className={`flex justify-between items-center px-3 py-2 bg-[#113] border border-blue-400 rounded transition-all duration-150 ${
+                        selectedIndex === actualIndex ? "ring-2 ring-white bg-blue-800" : ""
                       }`}
                     >
                       <span>{item.name}</span>
@@ -83,11 +83,11 @@ export default function ShopModal({
 
             <div className="mt-4 text-center flex-shrink-0 space-y-1">
               {confirming ? null : (
-                <p className="text-xs text-pink-300">
+                <p className="text-xs text-blue-200">
                   {selectedItem.id === "exit" ? "A = Salir" : "A = Comprar"}
                 </p>
               )}
-            </div>
+              <p className="text-xs text-blue-200">B = Volver</p>
           </div>
         </div>
       </div>

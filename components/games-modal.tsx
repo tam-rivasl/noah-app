@@ -15,7 +15,7 @@ const options = [
 export default function GamesModal({ visible, selectedIndex }: GamesModalProps) {
   if (!visible) return null;
   return (
-    <div className="absolute inset-x-0 bottom-0 bg-black/80 z-50 flex items-end justify-center pb-2">
+    <div className="absolute inset-0 bg-black/80 z-50 flex items-center justify-center p-2">
       <div
         className="pixel-font bg-[#001] text-blue-200 border-4 border-blue-400 shadow-[6px_6px_0px_#000] p-4 w-[260px] rounded-xl flex flex-col"
       >

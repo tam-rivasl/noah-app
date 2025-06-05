@@ -12,14 +12,9 @@ import { NoaPetting } from "./noa-petting";
 import MiniGameCatch from "./mini-game-catch";
 import MiniGameSpace from "./mini-game-space";
 import AudioSettingsModal from "./AudioSettingsModal";
-import ShopModal from "./shopModal";
+import ShopModal, { shopItems } from "./shopModal";
 import GamesModal from "./games-modal";
 
-const shopItems = [
-  { id: "food", name: "🍗 Comida", price: 10 },
-  { id: "toy", name: "🧸 Juguete", price: 15 },
-  { id: "bed", name: "🛏️ Cama nueva", price: 30 },
-];
 
 export type NoaState = {
   hunger: number;

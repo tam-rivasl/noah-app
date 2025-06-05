@@ -29,21 +29,18 @@ export default function AudioSettingsModal({
   if (!visible) return null;
 
   return (
-    <div className="absolute inset-x-0 bottom-0 bg-black/80 z-50 flex items-end justify-center pb-2">
+    <div className="absolute inset-0 bg-black/80 z-50 flex items-center justify-center p-2">
       <div
-        className="bg-[#111] border-4 border-white pixel-font text-white p-4 w-[280px]"
-        style={{
-          boxShadow: "4px 4px 0px #000",
-        }}
+        className="pixel-font bg-[#001] text-blue-200 border-4 border-blue-400 shadow-[6px_6px_0px_#000] p-4 w-[280px]"
       >
-        <h2 className="text-lg mb-2 border-b border-white pb-1">🔊 Sonido</h2>
+        <h2 className="text-lg mb-2 border-b border-blue-400 pb-1 text-center">🔊 Sonido</h2>
 
         <div className="mb-3 text-xs">
           <p>Volumen actual: {Math.round(volume * 100)}%</p>
           <div className="flex gap-2 mt-2 justify-center">
             <button
               onClick={() => onVolumeChange(Math.max(0, volume - 0.1))}
-              className={`bg-blue-500 text-black px-2 py-1 border border-white hover:bg-blue-300 ${
+              className={`bg-blue-500 text-black px-2 py-1 border border-blue-400 hover:bg-blue-300 ${
                 selectedIndex === 0 ? "ring-2 ring-white" : ""
               }`}
             >
@@ -51,7 +48,7 @@ export default function AudioSettingsModal({
             </button>
             <button
               onClick={() => onVolumeChange(Math.min(1, volume + 0.1))}
-              className={`bg-blue-500 text-black px-2 py-1 border border-white hover:bg-blue-300 ${
+              className={`bg-blue-500 text-black px-2 py-1 border border-blue-400 hover:bg-blue-300 ${
                 selectedIndex === 1 ? "ring-2 ring-white" : ""
               }`}
             >
@@ -59,7 +56,7 @@ export default function AudioSettingsModal({
             </button>
             <button
               onClick={onMute}
-              className={`bg-yellow-400 text-black px-2 py-1 border border-white hover:bg-yellow-300 ${
+              className={`bg-yellow-400 text-black px-2 py-1 border border-blue-400 hover:bg-yellow-300 ${
                 selectedIndex === 2 ? "ring-2 ring-white" : ""
               }`}
             >
@@ -67,7 +64,7 @@ export default function AudioSettingsModal({
             </button>
             <button
               onClick={onToggleBgm}
-              className={`bg-purple-500 text-black px-2 py-1 border border-white hover:bg-purple-300 ${
+              className={`bg-purple-500 text-black px-2 py-1 border border-blue-400 hover:bg-purple-300 ${
                 selectedIndex === 3 ? "ring-2 ring-white" : ""
               }`}
             >
@@ -75,7 +72,7 @@ export default function AudioSettingsModal({
             </button>
             <button
               onClick={onToggleSfx}
-              className={`bg-purple-500 text-black px-2 py-1 border border-white hover:bg-purple-300 ${
+              className={`bg-purple-500 text-black px-2 py-1 border border-blue-400 hover:bg-purple-300 ${
                 selectedIndex === 4 ? "ring-2 ring-white" : ""
               }`}
             >
@@ -83,7 +80,7 @@ export default function AudioSettingsModal({
             </button>
           </div>
         </div>
-        <p className="text-xs text-center">B = Volver</p>
+        <p className="text-xs text-center text-blue-200">B = Volver</p>
       </div>
     </div>
   );
