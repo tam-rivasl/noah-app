@@ -15,7 +15,6 @@ import AudioSettingsModal from "./AudioSettingsModal";
 import ShopModal, { shopItems } from "./shopModal";
 import GamesModal from "./games-modal";
 
-
 export type NoaState = {
   hunger: number;
   happiness: number;
@@ -37,7 +36,7 @@ export default function NoaTamagotchi() {
   >(null);
   const [isSleeping, setIsSleeping] = useState(false);
   const [screen, setScreen] = useState<"start" | "main" | "catch" | "space">(
-    "start"
+    "start",
   );
   const [moveCommand, setMoveCommand] = useState<
     "left" | "right" | "up" | "down" | null
@@ -47,7 +46,7 @@ export default function NoaTamagotchi() {
   const menuOptions: ("catch" | "space")[] = ["catch", "space"];
   const [time, setTime] = useState(new Date());
   const [backgroundImage, setBackgroundImage] = useState<string>(
-    "/images/back-grounds/day.png"
+    "/images/back-grounds/day.png",
   );
   const [noaDead, setNoaDead] = useState(false);
   const [visible, setShowSoundModal] = useState(false);
@@ -72,8 +71,12 @@ export default function NoaTamagotchi() {
 
   const getTotalScore = useCallback(() => {
     try {
-      const catchRecords = JSON.parse(localStorage.getItem("catchRecords") || "[]");
-      const spaceRecords = JSON.parse(localStorage.getItem("spaceRecords") || "[]");
+      const catchRecords = JSON.parse(
+        localStorage.getItem("catchRecords") || "[]",
+      );
+      const spaceRecords = JSON.parse(
+        localStorage.getItem("spaceRecords") || "[]",
+      );
       const all = [...catchRecords, ...spaceRecords];
       return all.reduce((sum: number, r: any) => sum + (r.score || 0), 0);
     } catch {
@@ -105,7 +108,7 @@ export default function NoaTamagotchi() {
   useEffect(() => {
     localStorage.setItem(
       "noaState",
-      JSON.stringify({ ...noaState, lastUpdated: Date.now() })
+      JSON.stringify({ ...noaState, lastUpdated: Date.now() }),
     );
   }, [noaState]);
 
@@ -238,7 +241,9 @@ export default function NoaTamagotchi() {
 
   const playActionSound = () => {
     if (!actionSoundEnabled) return;
-    const el = document.getElementById("action-sound") as HTMLAudioElement | null;
+    const el = document.getElementById(
+      "action-sound",
+    ) as HTMLAudioElement | null;
     if (el) {
       el.currentTime = 0;
       void el.play();
@@ -353,19 +358,18 @@ export default function NoaTamagotchi() {
   };
 
   // === iniciar el minijuego seleccionado
-const startSelectedGame = () => {
-  if (noaDead || isSleeping) return;
-  gaming();
-  setGamesVisible(false);
-  setScreen(menuOptions[selectedGameIndex]);
-};
-
+  const startSelectedGame = () => {
+    if (noaDead || isSleeping) return;
+    gaming();
+    setGamesVisible(false);
+    setScreen(menuOptions[selectedGameIndex]);
+  };
 
   const changeMenuSelection = (dir: "left" | "right") => {
     setSelectedGameIndex((i) =>
       dir === "left"
         ? (i - 1 + menuOptions.length) % menuOptions.length
-        : (i + 1) % menuOptions.length
+        : (i + 1) % menuOptions.length,
     );
   };
 
@@ -384,7 +388,7 @@ const startSelectedGame = () => {
   useEffect(() => {
     const normalBgm = document.getElementById("normal-bgm") as HTMLAudioElement;
     const warningBgm = document.getElementById(
-      "warning-bgm"
+      "warning-bgm",
     ) as HTMLAudioElement;
 
     if (!bgmEnabled) {
@@ -407,7 +411,7 @@ const startSelectedGame = () => {
   // 11) Control de sonido de advertencia
   useEffect(() => {
     const warningSound = document.getElementById(
-      "warning-sound"
+      "warning-sound",
     ) as HTMLAudioElement;
 
     if (emotion !== "normal") {
@@ -436,7 +440,9 @@ const startSelectedGame = () => {
 
   useEffect(() => {
     if (!actionSoundEnabled) {
-      const a = document.getElementById("action-sound") as HTMLAudioElement | null;
+      const a = document.getElementById(
+        "action-sound",
+      ) as HTMLAudioElement | null;
       if (a) a.pause();
     }
   }, [actionSoundEnabled]);
@@ -504,53 +510,80 @@ const startSelectedGame = () => {
                   </div>
                 ) : currentAction === "petting" ? (
                   <div className="w-[40px] h-[80px]">
-                    <NoaPetting />
-                  </div>
-                ) : (
-                  <div className="w-[40px] h-[80px]">
-                    <NoaWalking />
-                  </div>
-                )}
+            <img
+              src="/images/rip.png"
+              alt="ripNoa"
+              className="w-[200px] h-[150px] mb-2 pixel-art"
+            />
+            <p className="text-xs mb-2 pixel-font">
+              Pulsa “RESET” para reiniciar
+            </p>
+          <div className="absolute bottom-2 left-2 right-2 flex justify-between z-20">
+            <div className="flex flex-col items-center">
+              <span className="pixel-font text-[8px] leading-none mb-1">
+                Shop
+              </span>
+              <div
+                className={`w-[30px] h-[30px] pixel-art cursor-pointer flex items-center justify-center ${
+                  selectedIcon === "shop" ? "animate-bounce-random" : ""
+                }`}
+                onClick={() => {
+                  setShopIndex(0);
+                  setShopVisible(true);
+                }}
+              >
+                <img
+                  src="/images/tienda.png"
+                  alt="Shop"
+                  className="w-full h-full"
+                />
               </div>
-            </div>
-
-            {/* === Alerta 8 bit según emoción === */}
-            {emotion !== "normal" && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/50 z-30">
-                <div
-                  className="pixel-font text-red-400 text-[10px] px-2 py-1 border border-red-400 rounded animate-shake"
-                  style={{ backgroundColor: "rgba(0,0,0,0.7)" }}
-                >
-                  {emotion === "hungry" && "¡Noah tiene HAMBRE! 🍖"}
-                  {emotion === "tired" && "¡Noah está CANSADO! 💤"}
-                  {emotion === "sad" && "¡Noah está TRISTE! 🤕"}
-                </div>
+            <div className="flex flex-col items-center">
+              <span className="pixel-font text-[8px] leading-none mb-1">
+                Games
+              </span>
+              <div
+                className={`w-[30px] h-[30px] pixel-art cursor-pointer flex items-center justify-center ${
+                  selectedIcon === "games" ? "animate-bounce-random" : ""
+                }`}
+                onClick={() => {
+                  setGamesVisible(true);
+                  setSelectedGameIndex(0);
+                }}
+              >
+                <img
+                  src="/images/juegos.png"
+                  alt="Games"
+                  className="w-full h-full"
+                />
               </div>
-            )}
-          </>
-        )}
-
-
-        {/* === MiniGameCatch === */}
-        {screen === "catch" && !noaDead && !isSleeping && (
-          <MiniGameCatch
-            onExit={handleBack}
-            moveCommand={moveCommand}
-            startCommand={startCommand}
-          />
-        )}
-
-          <div className="flex flex-col items-center">
-            <span className="pixel-font text-[8px] leading-none mb-1">Shop</span>
-            <div
-              className={`w-[30px] h-[30px] pixel-art cursor-pointer flex items-center justify-center ${
-                selectedIcon === "shop" ? "animate-bounce-random" : ""
-              }`}
-              onClick={() => {
-                setShopIndex(0);
-                setShopVisible(true);
-              }}
-            >
+            <div className="flex flex-col items-center">
+              <span className="pixel-font text-[8px] leading-none mb-1">
+                Settings
+              </span>
+              <div
+                className={`w-[30px] h-[30px] pixel-art cursor-pointer flex items-center justify-center ${
+                  selectedIcon === "settings" ? "animate-bounce-random" : ""
+                }`}
+                onClick={() => {
+                  setAudioIndex(0);
+                  setShowSoundModal(true);
+                }}
+              >
+                <img
+                  src="/images/ajustes.png"
+                  alt="Config"
+                  className="w-full h-full"
+                />
+              </div>
+              if (dir === "left")
+                setAudioIndex((i) => (i - 1 + max + 1) % (max + 1));
+              else if (dir === "right")
+                setAudioIndex((i) => (i + 1) % (max + 1));
+              if (dir === "left")
+                setShopIndex((i) => (i - 1 + max + 1) % (max + 1));
+              else if (dir === "right")
+                setShopIndex((i) => (i + 1) % (max + 1));
               <img src="/images/tienda.png" alt="Shop" className="w-full h-full" />
             </div>
           <div className="flex flex-col items-center">

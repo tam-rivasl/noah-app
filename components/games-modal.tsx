@@ -12,14 +12,17 @@ const options = [
   { id: "space", label: "☄️ Meteoritos" },
 ];
 
-export default function GamesModal({ visible, selectedIndex }: GamesModalProps) {
+export default function GamesModal({
+  visible,
+  selectedIndex,
+}: GamesModalProps) {
   if (!visible) return null;
   return (
     <div className="absolute inset-0 bg-black/80 z-50 flex items-center justify-center p-2">
-      <div
-        className="pixel-font bg-[#001] text-blue-200 border-4 border-blue-400 shadow-[6px_6px_0px_#000] p-4 w-[260px] rounded-xl flex flex-col"
-      >
-        <h2 className="text-lg border-b border-blue-400 pb-1 text-center mb-2">🎮 Minijuegos</h2>
+      <div className="pixel-font bg-[#001] text-blue-200 border-4 border-blue-400 shadow-[6px_6px_0px_#000] p-4 w-[260px] rounded-xl flex flex-col">
+        <h2 className="text-lg border-b border-blue-400 pb-1 text-center mb-2">
+          🎮 Minijuegos
+        </h2>
         <div className="flex flex-col gap-2 mb-2">
           {options.map((opt, idx) => (
             <div
@@ -34,7 +37,9 @@ export default function GamesModal({ visible, selectedIndex }: GamesModalProps) 
             </div>
           ))}
         </div>
-        <p className="text-xs text-center text-blue-200">A = Jugar, B = Volver</p>
+        <p className="text-xs text-center text-blue-200">
+          A = Jugar, B = Volver
+        </p>
       </div>
     </div>
   );
