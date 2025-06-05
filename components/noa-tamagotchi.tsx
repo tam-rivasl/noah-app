@@ -13,6 +13,7 @@ import MiniGameCatch from "./mini-game-catch";
 import MiniGameSpace from "./mini-game-space";
 import AudioSettingsModal from "./AudioSettingsModal";
 import ShopModal from "./shopModal";
+import GamesModal from "./games-modal";
 
 const shopItems = [
   { id: "food", name: "🍗 Comida", price: 10 },
@@ -40,14 +41,14 @@ export default function NoaTamagotchi() {
     "eating" | "petting" | "gaming" | null
   >(null);
   const [isSleeping, setIsSleeping] = useState(false);
-  const [screen, setScreen] = useState<
-    "start" | "main" | "menu" | "catch" | "space"
-  >("start");
+  const [screen, setScreen] = useState<"start" | "main" | "catch" | "space">(
+    "start"
+  );
   const [moveCommand, setMoveCommand] = useState<
     "left" | "right" | "up" | "down" | null
   >(null);
   const [startCommand, setStartCommand] = useState(false);
-  const [selectedMenuIndex, setSelectedMenuIndex] = useState(0);
+  const [selectedGameIndex, setSelectedGameIndex] = useState(0);
   const menuOptions: ("catch" | "space")[] = ["catch", "space"];
   const [time, setTime] = useState(new Date());
   const [backgroundImage, setBackgroundImage] = useState<string>(
@@ -57,9 +58,10 @@ export default function NoaTamagotchi() {
   const [visible, setShowSoundModal] = useState(false);
   const [shopVisible, setShopVisible] = useState(false);
   const [volume, setVolume] = useState(1); // de 0.0 a 1.0
-  const [selectedIcon, setSelectedIcon] = useState<"none" | "settings" | "shop">(
-    "none"
-  );
+  const [selectedIcon, setSelectedIcon] = useState<
+    "none" | "settings" | "shop" | "games"
+  >("none");
+  const [gamesVisible, setGamesVisible] = useState(false);
   const [audioIndex, setAudioIndex] = useState(0);
   const [shopIndex, setShopIndex] = useState(0);
   const [coinsSpent, setCoinsSpent] = useState(0);
@@ -213,7 +215,7 @@ export default function NoaTamagotchi() {
 
   const gaming = () => {
     if (isSleeping || noaDead) return;
-    if (menuOptions[selectedMenuIndex]) {
+    if (menuOptions[selectedGameIndex]) {
       setCurrentAction("gaming");
       setNoaState((p) => ({
         ...p,
@@ -274,6 +276,12 @@ export default function NoaTamagotchi() {
       return;
     }
 
+    if (gamesVisible) {
+      playActionSound();
+      startSelectedGame();
+      return;
+    }
+
     if (selectedIcon === "settings") {
       setShowSoundModal(true);
       setAudioIndex(0);
@@ -283,6 +291,11 @@ export default function NoaTamagotchi() {
     if (selectedIcon === "shop") {
       setShopVisible(true);
       setShopIndex(0);
+      return;
+    }
+    if (selectedIcon === "games") {
+      setGamesVisible(true);
+      setSelectedGameIndex(0);
       return;
     }
     playActionSound();
@@ -315,11 +328,9 @@ export default function NoaTamagotchi() {
       setTimeout(() => setStartCommand(false), 100);
       return;
     }
-    // Si estamos en “start” → “main”, si en “main” → “menu”
+    // Si estamos en “start” → “main”
     if (screen === "start") {
       setScreen("main");
-    } else if (screen === "main") {
-      setScreen("menu");
     }
   };
 
@@ -338,10 +349,11 @@ export default function NoaTamagotchi() {
     } else if (visible) {
       setShowSoundModal(false);
       setAudioIndex(0);
-    } else if (screen === "menu") {
-      setScreen("main");
+    } else if (gamesVisible) {
+      setGamesVisible(false);
     } else if (screen === "catch" || screen === "space") {
-      setScreen("menu");
+      setScreen("main");
+      setGamesVisible(true);
     }
   };
 
@@ -349,12 +361,13 @@ export default function NoaTamagotchi() {
 const startSelectedGame = () => {
   if (noaDead || isSleeping) return;
   gaming();
-  setScreen(menuOptions[selectedMenuIndex]);
+  setGamesVisible(false);
+  setScreen(menuOptions[selectedGameIndex]);
 };
 
 
   const changeMenuSelection = (dir: "left" | "right") => {
-    setSelectedMenuIndex((i) =>
+    setSelectedGameIndex((i) =>
       dir === "left"
         ? (i - 1 + menuOptions.length) % menuOptions.length
         : (i + 1) % menuOptions.length
@@ -521,49 +534,6 @@ const startSelectedGame = () => {
           </>
         )}
 
-        {/* === Menú de minijuegos === */}
-        {screen === "menu" && !noaDead && (
-          <div
-            className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center text-white pixel-font p-4"
-            style={{ backdropFilter: "blur(2px)" }}
-          >
-            {isSleeping ? (
-              <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/50 z-30">
-                <div
-                  className="pixel-font text-red-400 text-[10px] px-2 py-1 border border-red-400 rounded animate-shake"
-                  style={{ backgroundColor: "rgba(0,0,0,0.7)" }}
-                >
-                  <p className="pixel-font text-[12px]">
-                    {" "}
-                    💤 Noah está durmiendo… vuelve luego 💤
-                  </p>
-                </div>
-              </div>
-            ) : (
-              <>
-                <h2 className="text-lg pixel-font mb-2">Juega con Noa!</h2>
-                <div className="flex gap-4 mb-2">
-                  {menuOptions.map((opt, idx) => (
-                    <button
-                      key={opt}
-                      onClick={() => setScreen(opt)}
-                      className={`px-4 py-2 text-sm rounded ${
-                        selectedMenuIndex === idx
-                          ? "bg-white text-black"
-                          : "bg-black/30"
-                      } pixel-font`}
-                    >
-                      {opt === "catch" ? "Saltin rebotin" : "☄️ Meteoritos"}
-                    </button>
-                  ))}
-                </div>
-                <p className="text-xs pixel-font text-gray-200">
-                  Usa ← → para cambiar y A para seleccionar
-                </p>
-              </>
-            )}
-          </div>
-        )}
 
         {/* === MiniGameCatch === */}
         {screen === "catch" && !noaDead && !isSleeping && (
@@ -606,7 +576,18 @@ const startSelectedGame = () => {
           >
             <img src="/images/tienda.png" alt="Shop" className="w-full h-full" />
           </div>
-          <div 
+          <div
+            className={`w-[30px] h-[30px] pixel-art cursor-pointer flex items-center justify-center ${
+              selectedIcon === "games" ? " animate-pulse" : ""
+            }`}
+            onClick={() => {
+              setGamesVisible(true);
+              setSelectedGameIndex(0);
+            }}
+          >
+            <img src="/images/juegos.png" alt="Games" className="w-full h-full" />
+          </div>
+          <div
             className={`w-[30px] h-[30px] pixel-art cursor-pointer flex items-center justify-center ${
               selectedIcon === "settings" ? " animate-pulse" : ""
             }`}
@@ -638,6 +619,7 @@ const startSelectedGame = () => {
           confirming={shopConfirm}
           error={shopError}
         />
+        <GamesModal visible={gamesVisible} selectedIndex={selectedGameIndex} />
       </div>
       {/* -------------------- CONTROLES -------------------- */}
       <div className="gameboy-controls">
@@ -653,7 +635,7 @@ const startSelectedGame = () => {
             setScreen("start");
             setIsSleeping(false);
             setCurrentAction(null);
-            setSelectedMenuIndex(0);
+            setSelectedGameIndex(0);
             setNoaDead(false);
           }}
           onStart={handleStart}
@@ -667,10 +649,10 @@ const startSelectedGame = () => {
               const max = shopItems.length;
               if (dir === "up") setShopIndex((i) => (i - 1 + max + 1) % (max + 1));
               else if (dir === "down") setShopIndex((i) => (i + 1) % (max + 1));
-            } else if (screen === "menu") {
+            } else if (gamesVisible) {
               changeMenuSelection(dir === "left" ? "left" : "right");
             } else if (screen === "main") {
-              const icons = ["shop", "settings"] as const;
+              const icons = ["shop", "games", "settings"] as const;
               if (dir === "left" || dir === "right") {
                 const currentIndex = icons.indexOf(selectedIcon as any);
                 const step = dir === "left" ? -1 : 1;
@@ -692,7 +674,7 @@ const startSelectedGame = () => {
           onBack={handleBack}
           isSleeping={isSleeping || noaDead}
           isStarting={screen === "start"}
-          inMenu={["menu", "catch", "space"].includes(screen)}
+          inMenu={gamesVisible || ["catch", "space"].includes(screen)}
         />
       </div>
     </div>
