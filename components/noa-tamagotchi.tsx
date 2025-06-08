@@ -11,6 +11,9 @@ import { NoaPetting } from "./noa-petting";
 // Importa tus minijuegos:
 import MiniGameCatch from "./mini-game-catch";
 import MiniGameSpace from "./mini-game-space";
+import AudioSettingsModal from "./AudioSettingsModal";
+import ShopModal, { shopItems } from "./shopModal";
+import GamesModal from "./games-modal";
 
 export type NoaState = {
   hunger: number;
@@ -28,16 +31,60 @@ const initialState: NoaState = {
 
 export default function NoaTamagotchi() {
   const [noaState, setNoaState] = useState<NoaState>(initialState);
-  const [currentAction, setCurrentAction] = useState<"eating" | "petting" | "gaming" | null>(null);
+  const [currentAction, setCurrentAction] = useState<
+    "eating" | "petting" | "gaming" | null
+  >(null);
   const [isSleeping, setIsSleeping] = useState(false);
-  const [screen, setScreen] = useState<"start" | "main" | "menu" | "catch" | "space">("start");
-  const [moveCommand, setMoveCommand] = useState<"left" | "right" | "up" | "down" | null>(null);
+  const [screen, setScreen] = useState<"start" | "main" | "catch" | "space">(
+    "start",
+  );
+  const [moveCommand, setMoveCommand] = useState<
+    "left" | "right" | "up" | "down" | null
+  >(null);
   const [startCommand, setStartCommand] = useState(false);
-  const [selectedMenuIndex, setSelectedMenuIndex] = useState(0);
+  const [selectedGameIndex, setSelectedGameIndex] = useState(0);
   const menuOptions: ("catch" | "space")[] = ["catch", "space"];
   const [time, setTime] = useState(new Date());
-  const [backgroundImage, setBackgroundImage] = useState<string>("/images/back-grounds/day.png");
+  const [backgroundImage, setBackgroundImage] = useState<string>(
+    "/images/back-grounds/day.png",
+  );
   const [noaDead, setNoaDead] = useState(false);
+  const [visible, setShowSoundModal] = useState(false);
+  const [shopVisible, setShopVisible] = useState(false);
+  const [volume, setVolume] = useState(1); // de 0.0 a 1.0
+  const [selectedIcon, setSelectedIcon] = useState<
+    "none" | "settings" | "shop" | "games"
+  >("none");
+  const [gamesVisible, setGamesVisible] = useState(false);
+  const [audioIndex, setAudioIndex] = useState(0);
+  const [shopIndex, setShopIndex] = useState(0);
+  const [coinsSpent, setCoinsSpent] = useState(0);
+  const [shopConfirm, setShopConfirm] = useState<string | null>(null);
+  const [shopError, setShopError] = useState<string | null>(null);
+  const [bgmEnabled, setBgmEnabled] = useState(true);
+  const [actionSoundEnabled, setActionSoundEnabled] = useState(true);
+
+  useEffect(() => {
+    const stored = localStorage.getItem("coinsSpent");
+    if (stored) setCoinsSpent(parseInt(stored, 10));
+  }, []);
+
+  const getTotalScore = useCallback(() => {
+    try {
+      const catchRecords = JSON.parse(
+        localStorage.getItem("catchRecords") || "[]",
+      );
+      const spaceRecords = JSON.parse(
+        localStorage.getItem("spaceRecords") || "[]",
+      );
+      const all = [...catchRecords, ...spaceRecords];
+      return all.reduce((sum: number, r: any) => sum + (r.score || 0), 0);
+    } catch {
+      return 0;
+    }
+  }, []);
+
+  const money = getTotalScore() - coinsSpent;
 
   // —————————————————————————————————————————————————
   // 1) Cargar estado guardado
@@ -59,7 +106,10 @@ export default function NoaTamagotchi() {
 
   // 2) Guardar estado al cambiar
   useEffect(() => {
-    localStorage.setItem("noaState", JSON.stringify({ ...noaState, lastUpdated: Date.now() }));
+    localStorage.setItem(
+      "noaState",
+      JSON.stringify({ ...noaState, lastUpdated: Date.now() }),
+    );
   }, [noaState]);
 
   // 3) Decaimiento de stats cada minuto
@@ -122,11 +172,13 @@ export default function NoaTamagotchi() {
     }
   }, [noaState.energy, isSleeping]);
 
-
-
   // 9) Morir si toda las stat llegan a  0
   useEffect(() => {
-    if (noaState.hunger === 0 && noaState.happiness === 0 && noaState.energy === 0) {
+    if (
+      noaState.hunger === 0 &&
+      noaState.happiness === 0 &&
+      noaState.energy === 0
+    ) {
       setNoaDead(true);
       setCurrentAction(null);
       setIsSleeping(false);
@@ -161,7 +213,7 @@ export default function NoaTamagotchi() {
 
   const gaming = () => {
     if (isSleeping || noaDead) return;
-    if (menuOptions[selectedMenuIndex]) {
+    if (menuOptions[selectedGameIndex]) {
       setCurrentAction("gaming");
       setNoaState((p) => ({
         ...p,
@@ -170,6 +222,84 @@ export default function NoaTamagotchi() {
         hunger: Math.max(p.hunger - 10, 0),
       }));
     }
+  };
+
+  const handleBuy = (id: string) => {
+    const item = shopItems.find((i) => i.id === id);
+    if (!item) return;
+    if (money < item.price) {
+      setShopError("❌ No tienes suficientes monedas");
+      setShopConfirm(null);
+      return;
+    }
+    const spent = coinsSpent + item.price;
+    setCoinsSpent(spent);
+    localStorage.setItem("coinsSpent", String(spent));
+    setShopError(null);
+    setShopConfirm(null);
+  };
+
+  const playActionSound = () => {
+    if (!actionSoundEnabled) return;
+    const el = document.getElementById(
+      "action-sound",
+    ) as HTMLAudioElement | null;
+    if (el) {
+      el.currentTime = 0;
+      void el.play();
+    }
+  };
+
+  const handleAButton = () => {
+    if (visible) {
+      playActionSound();
+      if (audioIndex === 0) setVolume(Math.max(0, volume - 0.1));
+      else if (audioIndex === 1) setVolume(Math.min(1, volume + 0.1));
+      else if (audioIndex === 2) setVolume(0);
+      else if (audioIndex === 3) setBgmEnabled((b) => !b);
+      else if (audioIndex === 4) setActionSoundEnabled((b) => !b);
+      return;
+    }
+
+    if (shopVisible) {
+      playActionSound();
+      if (shopConfirm) {
+        handleBuy(shopConfirm);
+      } else if (shopIndex === shopItems.length) {
+        setShopVisible(false);
+        setShopIndex(0);
+        setShopError(null);
+        setScreen("main");
+      } else {
+        setShopConfirm(shopItems[shopIndex].id);
+      }
+      return;
+    }
+
+    if (gamesVisible) {
+      playActionSound();
+      startSelectedGame();
+      return;
+    }
+
+    if (selectedIcon === "settings") {
+      setShowSoundModal(true);
+      setAudioIndex(0);
+      return;
+    }
+
+    if (selectedIcon === "shop") {
+      setShopVisible(true);
+      setShopIndex(0);
+      return;
+    }
+    if (selectedIcon === "games") {
+      setGamesVisible(true);
+      setSelectedGameIndex(0);
+      return;
+    }
+    playActionSound();
+    feedNoa();
   };
 
   // Limpiar acción después de 2s (si no duerme ni está muerto)
@@ -184,6 +314,7 @@ export default function NoaTamagotchi() {
   // D-PAD
   const handleMove = (dir: "left" | "right" | "up" | "down"): void => {
     if (noaDead) return;
+    playActionSound();
     setMoveCommand(dir);
     setTimeout(() => setMoveCommand(null), 100);
   };
@@ -197,35 +328,48 @@ export default function NoaTamagotchi() {
       setTimeout(() => setStartCommand(false), 100);
       return;
     }
-    // Si estamos en “start” → “main”, si en “main” → “menu”
+    // Si estamos en “start” → “main”
     if (screen === "start") {
       setScreen("main");
-    } else if (screen === "main") {
-      setScreen("menu");
     }
   };
 
   const handleBack = () => {
     if (noaDead) return;
-    if (screen === "menu") {
-      setScreen("main");
+    playActionSound();
+    if (shopVisible) {
+      if (shopConfirm) {
+        setShopConfirm(null);
+      } else {
+        setShopVisible(false);
+        setShopIndex(0);
+        setShopError(null);
+        setScreen("main");
+      }
+    } else if (visible) {
+      setShowSoundModal(false);
+      setAudioIndex(0);
+    } else if (gamesVisible) {
+      setGamesVisible(false);
     } else if (screen === "catch" || screen === "space") {
-      setScreen("menu");
+      setScreen("main");
+      setGamesVisible(true);
     }
   };
 
   // === iniciar el minijuego seleccionado
   const startSelectedGame = () => {
-    if (noaDead || isSleeping) return; // bloqueamos si duerme o está muerto
-    gaming(); // Aumenta stats al entrar
-    setScreen(menuOptions[selectedMenuIndex]);
+    if (noaDead || isSleeping) return;
+    gaming();
+    setGamesVisible(false);
+    setScreen(menuOptions[selectedGameIndex]);
   };
 
   const changeMenuSelection = (dir: "left" | "right") => {
-    setSelectedMenuIndex((i) =>
+    setSelectedGameIndex((i) =>
       dir === "left"
         ? (i - 1 + menuOptions.length) % menuOptions.length
-        : (i + 1) % menuOptions.length
+        : (i + 1) % menuOptions.length,
     );
   };
 
@@ -240,6 +384,69 @@ export default function NoaTamagotchi() {
 
   const emotion = getEmotional();
 
+  // 10) Control de música de fondo
+  useEffect(() => {
+    const normalBgm = document.getElementById("normal-bgm") as HTMLAudioElement;
+    const warningBgm = document.getElementById(
+      "warning-bgm",
+    ) as HTMLAudioElement;
+
+    if (!bgmEnabled) {
+      normalBgm.pause();
+      warningBgm.pause();
+    } else if (emotion === "normal") {
+      normalBgm.play();
+      warningBgm.pause();
+    } else {
+      normalBgm.pause();
+      warningBgm.play();
+    }
+
+    return () => {
+      normalBgm.pause();
+      warningBgm.pause();
+    };
+  }, [emotion, bgmEnabled]);
+
+  // 11) Control de sonido de advertencia
+  useEffect(() => {
+    const warningSound = document.getElementById(
+      "warning-sound",
+    ) as HTMLAudioElement;
+
+    if (emotion !== "normal") {
+      warningSound.play();
+    } else {
+      warningSound.pause();
+    }
+    return () => {
+      warningSound.pause();
+    };
+  }, [emotion]);
+  // Aplicar el volumen a todos los sonidos
+  useEffect(() => {
+    const allSounds = [
+      document.getElementById("normal-bgm") as HTMLAudioElement,
+      document.getElementById("warning-bgm") as HTMLAudioElement,
+      document.getElementById("warning-sound") as HTMLAudioElement,
+      document.getElementById("action-sound") as HTMLAudioElement,
+    ];
+    allSounds.forEach((audio) => {
+      if (audio) {
+        audio.volume = volume;
+      }
+    });
+  }, [volume]);
+
+  useEffect(() => {
+    if (!actionSoundEnabled) {
+      const a = document.getElementById(
+        "action-sound",
+      ) as HTMLAudioElement | null;
+      if (a) a.pause();
+    }
+  }, [actionSoundEnabled]);
+
   return (
     <div className="gameboy">
       {/* -------------------- HEADER -------------------- */}
@@ -249,6 +456,10 @@ export default function NoaTamagotchi() {
           alt="NOA Console"
           className="gameboy-logo mx-auto"
         />
+        <audio id="warning-sound" src="/sounds/warning.mp3" />
+        <audio id="normal-bgm" src="/sounds/sound-1.mp3" loop />
+        <audio id="warning-bgm" src="/sounds/warning-music.mp3" loop />
+        <audio id="action-sound" src="/sounds/seleccionar.mp3" />
       </div>
 
       {/* -------------------- PANTALLA -------------------- */}
@@ -263,7 +474,9 @@ export default function NoaTamagotchi() {
         {/* === Press Start === */}
         {screen === "start" && !noaDead && (
           <div className="gameboy-top2 flex flex-col items-center justify-end h-full">
-            <p className="press-start-text animate-blink pixel-font">Press Start</p>
+            <p className="press-start-text animate-blink pixel-font">
+              Press Start
+            </p>
           </div>
         )}
 
@@ -275,13 +488,16 @@ export default function NoaTamagotchi() {
               <div className="w-full flex justify-center">
                 <StatusBars noaState={noaState} />
               </div>
-              <div className="pixel-font text-xs text-white bg-black px-1 py-0.5 rounded border border-white shadow-[2px_2px_0_#444]">
-                {time.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+              <div className="pixel-font text-xs text-white  ">
+                {time.toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
               </div>
             </div>
 
             {/* Animación de Noa según estado */}
-            <div className="relative z-10 flex flex-col items-center justify-end w-full h-full p-2 pt-16">
+            <div className="relative z-10 flex flex-col items-center justify-end w-full p-2 pt-6">
               <div className="relative flex items-end justify-center w-full h-full">
                 {isSleeping ? (
                   <div className="w-[40px] h-[80px]">
@@ -319,53 +535,22 @@ export default function NoaTamagotchi() {
           </>
         )}
 
-        {/* === Menú de minijuegos === */}
-        {screen === "menu" && !noaDead && (
-          <div
-            className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center text-white pixel-font p-4"
-            style={{ backdropFilter: "blur(2px)" }}
-          >
-            {isSleeping ? (
-               <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/50 z-30">
-                <div
-                  className="pixel-font text-red-400 text-[10px] px-2 py-1 border border-red-400 rounded animate-shake"
-                  style={{ backgroundColor: "rgba(0,0,0,0.7)" }}
-                >
-                   <p className="pixel-font text-[12px]"> 💤 Noah está durmiendo… vuelve luego 💤</p>
-                </div>
-              </div>
-            ) : (
-              <>
-                <h2 className="text-lg pixel-font mb-2">Juega con Noa!</h2>
-                <div className="flex gap-4 mb-2">
-                  {menuOptions.map((opt, idx) => (
-                    <button
-                      key={opt}
-                      onClick={() => setScreen(opt)}
-                      className={`px-4 py-2 text-sm rounded ${
-                        selectedMenuIndex === idx ? "bg-white text-black" : "bg-black/30"
-                      } pixel-font`}
-                    >
-                      {opt === "catch" ? "Saltin rebotin" : "☄️ Meteoritos"}
-                    </button>
-                  ))}
-                </div>
-                <p className="text-xs pixel-font text-gray-200">
-                  Usa ← → para cambiar y A para seleccionar
-                </p>
-              </>
-            )}
-          </div>
-        )}
-
         {/* === MiniGameCatch === */}
         {screen === "catch" && !noaDead && !isSleeping && (
-          <MiniGameCatch onExit={handleBack} moveCommand={moveCommand} startCommand={startCommand} />
+          <MiniGameCatch
+            onExit={handleBack}
+            moveCommand={moveCommand}
+            startCommand={startCommand}
+          />
         )}
 
         {/* === MiniGameSpace === */}
         {screen === "space" && !noaDead && !isSleeping && (
-          <MiniGameSpace onExit={handleBack} moveCommand={moveCommand} startCommand={startCommand} />
+          <MiniGameSpace
+            onExit={handleBack}
+            moveCommand={moveCommand}
+            startCommand={startCommand}
+          />
         )}
 
         {/* === Game Over (Tamagotchi) === */}
@@ -377,16 +562,88 @@ export default function NoaTamagotchi() {
               className="w-[200px] h-[150px] mb-2 pixel-art"
             />
             <h1 className="text-sm font-bold mb-1 pixel-font">GAME OVER</h1>
-            <p className="text-xs mb-2 pixel-font">Pulsa “RESET” para reiniciar</p>
+            <p className="text-xs mb-2 pixel-font">
+              Pulsa “RESET” para reiniciar
+            </p>
           </div>
         )}
-      </div>
 
+        {/* Iconos inferiores */}
+        {screen === "main" && (
+          <div className="absolute bottom-2 left-2 right-2 flex justify-between z-20">
+            <div
+              className={`w-[35px] h-[40px] pixel-art cursor-pointer flex items-center justify-center ${
+                selectedIcon === "shop" ? "animate-pulse" : ""
+              }`}
+              onClick={() => {
+                setShopIndex(0);
+                setShopVisible(true);
+              }}
+            >
+              <img
+                src="/images/icons/shop.png"
+                alt="Shop"
+                className="w-full h-full"
+              />
+            </div>
+            <div
+              className={`w-[25px] h-[25px] pixel-art cursor-pointer flex items-center justify-center ${
+                selectedIcon === "games" ? " animate-pulse" : ""
+              }`}
+              onClick={() => {
+                setGamesVisible(true);
+                setSelectedGameIndex(0);
+              }}
+            >
+              <img
+                src="/images/icons/games.png"
+                alt="Games"
+                className="w-full h-full"
+              />
+            </div>
+            <div
+              className={`w-[30px] h-[40px] pixel-art cursor-pointer flex items-center justify-center ${
+                selectedIcon === "settings" ? " animate-pulse" : ""
+              }`}
+              onClick={() => {
+                setAudioIndex(0);
+                setShowSoundModal(true);
+              }}
+            >
+              <img
+                src="/images/icons/settings.png"
+                alt="Config"
+                className="w-full h-full"
+              />
+            </div>
+          </div>
+        )}
+
+        <AudioSettingsModal
+          visible={visible}
+          volume={volume}
+          onVolumeChange={setVolume}
+          onMute={() => setVolume(0)}
+          bgmEnabled={bgmEnabled}
+          onToggleBgm={() => setBgmEnabled((b) => !b)}
+          sfxEnabled={actionSoundEnabled}
+          onToggleSfx={() => setActionSoundEnabled((b) => !b)}
+          selectedIndex={audioIndex}
+        />
+        <ShopModal
+          visible={shopVisible}
+          selectedIndex={shopIndex}
+          money={money}
+          confirming={shopConfirm}
+          error={shopError}
+        />
+        <GamesModal visible={gamesVisible} selectedIndex={selectedGameIndex} />
+      </div>
       {/* -------------------- CONTROLES -------------------- */}
       <div className="gameboy-controls">
         <ActionButtons
-          onFeed={feedNoa}
-          onPet={petNoa}
+          onFeed={handleAButton}
+          onPet={shopVisible || visible ? handleBack : petNoa}
           onSleep={() => {
             if (!isSleeping && !noaDead) setIsSleeping(true);
           }}
@@ -396,21 +653,49 @@ export default function NoaTamagotchi() {
             setScreen("start");
             setIsSleeping(false);
             setCurrentAction(null);
-            setSelectedMenuIndex(0);
+            setSelectedGameIndex(0);
             setNoaDead(false);
           }}
           onStart={handleStart}
           onStartGame={startSelectedGame}
           onMove={(dir) => {
-            if (screen === "menu") {
+            if (visible) {
+              const max = 4;
+              if (dir === "left")
+                setAudioIndex((i) => (i - 1 + max + 1) % (max + 1));
+              else if (dir === "right")
+                setAudioIndex((i) => (i + 1) % (max + 1));
+            } else if (shopVisible) {
+              const max = shopItems.length;
+              if (dir === "up")
+                setShopIndex((i) => (i - 1 + max + 1) % (max + 1));
+              else if (dir === "down") setShopIndex((i) => (i + 1) % (max + 1));
+            } else if (gamesVisible) {
               changeMenuSelection(dir === "left" ? "left" : "right");
+            } else if (screen === "main") {
+              const icons = ["shop", "games", "settings"] as const;
+              if (dir === "left" || dir === "right") {
+                const currentIndex = icons.indexOf(selectedIcon as any);
+                const step = dir === "left" ? -1 : 1;
+                const nextIndex =
+                  currentIndex === -1
+                    ? dir === "left"
+                      ? icons.length - 1
+                      : 0
+                    : (currentIndex + step + icons.length) % icons.length;
+                setSelectedIcon(icons[nextIndex]);
+              } else if (dir === "up") {
+                setSelectedIcon("none");
+              } else if (dir === "down" && selectedIcon === "none") {
+                setSelectedIcon("shop");
+              }
             }
             handleMove(dir);
           }}
           onBack={handleBack}
           isSleeping={isSleeping || noaDead}
           isStarting={screen === "start"}
-          inMenu={["menu", "catch", "space"].includes(screen)}
+          inMenu={gamesVisible || ["catch", "space"].includes(screen)}
         />
       </div>
     </div>
