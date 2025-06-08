@@ -86,6 +86,14 @@ export default function NoaTamagotchi() {
 
   const money = getTotalScore() - coinsSpent;
 
+  const sectionLabel = shopVisible || selectedIcon === "shop"
+    ? "Tienda"
+    : gamesVisible || selectedIcon === "games"
+    ? "Juegos"
+    : visible || selectedIcon === "settings"
+    ? "Configuración"
+    : null;
+
   // —————————————————————————————————————————————————
   // 1) Cargar estado guardado
   useEffect(() => {
@@ -488,7 +496,12 @@ export default function NoaTamagotchi() {
               <div className="w-full flex justify-center">
                 <StatusBars noaState={noaState} />
               </div>
-              <div className="pixel-font text-xs text-white  ">
+              {sectionLabel && (
+                <div className="pixel-font text-xs text-white text-center w-full">
+                  {sectionLabel}
+                </div>
+              )}
+              <div className="pixel-font text-xs text-white">
                 {time.toLocaleTimeString([], {
                   hour: "2-digit",
                   minute: "2-digit",
@@ -572,8 +585,8 @@ export default function NoaTamagotchi() {
         {screen === "main" && (
           <div className="absolute bottom-2 left-2 right-2 flex justify-between z-20">
             <div
-              className={`w-[35px] h-[40px] pixel-art cursor-pointer flex items-center justify-center ${
-                selectedIcon === "shop" ? "animate-pulse" : ""
+              className={`w-[35px] h-[40px] pixel-art cursor-pointer flex items-center justify-center transition-transform ${
+                selectedIcon === "shop" ? "scale-110" : "hover:scale-110"
               }`}
               onClick={() => {
                 setShopIndex(0);
@@ -587,8 +600,8 @@ export default function NoaTamagotchi() {
               />
             </div>
             <div
-              className={`w-[25px] h-[25px] pixel-art cursor-pointer flex items-center justify-center ${
-                selectedIcon === "games" ? " animate-pulse" : ""
+              className={`w-[25px] h-[25px] pixel-art cursor-pointer flex items-center justify-center transition-transform ${
+                selectedIcon === "games" ? "scale-110" : "hover:scale-110"
               }`}
               onClick={() => {
                 setGamesVisible(true);
@@ -602,8 +615,8 @@ export default function NoaTamagotchi() {
               />
             </div>
             <div
-              className={`w-[30px] h-[40px] pixel-art cursor-pointer flex items-center justify-center ${
-                selectedIcon === "settings" ? " animate-pulse" : ""
+              className={`w-[30px] h-[40px] pixel-art cursor-pointer flex items-center justify-center transition-transform ${
+                selectedIcon === "settings" ? "scale-110" : "hover:scale-110"
               }`}
               onClick={() => {
                 setAudioIndex(0);
