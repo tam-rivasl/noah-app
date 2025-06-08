@@ -36,11 +36,12 @@ export default function ShopModal({
   const listRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const itemEl = listRef.current?.children[selectedIndex] as
+    const container = listRef.current;
+    const itemEl = container?.children[selectedIndex] as
       | HTMLElement
       | undefined;
-    if (itemEl) {
-      itemEl.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    if (itemEl && container) {
+      itemEl.scrollIntoView({ block: "center", inline: "nearest" });
     }
   }, [selectedIndex]);
 
