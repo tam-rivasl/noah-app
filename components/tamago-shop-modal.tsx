@@ -37,11 +37,11 @@ export default function TamagoShopModal({
     const itemEl = listRef.current?.children[selectedIndex] as
       | HTMLElement
       | undefined;
-    if (itemEl) itemEl.scrollIntoView({ block: "center", behavior: "smooth" });
+    if (itemEl) itemEl.scrollIntoView({ block: "nearest", behavior: "smooth" });
   }, [selectedIndex]);
 
   return (
-    <div className="absolute inset-0 bg-black/80 z-50 flex items-center justify-center p-2 overflow-y-auto">
+    <div className="absolute inset-0 bg-black/80 z-50 flex items-start justify-center p-2 overflow-y-auto">
       <div className="pixel-font bg-[#102] text-pink-200 border-4 border-pink-400 shadow-[6px_6px_0px_#000] p-4 w-full max-w-xs rounded-xl flex flex-col justify-between">
         <div className="flex flex-col gap-2 overflow-hidden h-full">
           <div className="flex-shrink-0">
