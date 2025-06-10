@@ -13,6 +13,7 @@ import MiniGameCatch from "./mini-game-catch";
 import MiniGameSpace from "./mini-game-space";
 import AudioSettingsModal from "./AudioSettingsModal";
 import ShopModal, { shopItems } from "./shopModal";
+import TamagoShopModal, { tamagoShopItems } from "./tamago-shop-modal";
 import GamesModal from "./games-modal";
 
 export type NoaState = {
@@ -51,6 +52,7 @@ export default function NoaTamagotchi() {
   const [noaDead, setNoaDead] = useState(false);
   const [visible, setShowSoundModal] = useState(false);
   const [shopVisible, setShopVisible] = useState(false);
+  const [tamagoShopVisible, setTamagoShopVisible] = useState(false);
   const [volume, setVolume] = useState(1); // de 0.0 a 1.0
   const [selectedIcon, setSelectedIcon] = useState<
     "none" | "settings" | "shop" | "games"
@@ -58,9 +60,14 @@ export default function NoaTamagotchi() {
   const [gamesVisible, setGamesVisible] = useState(false);
   const [audioIndex, setAudioIndex] = useState(0);
   const [shopIndex, setShopIndex] = useState(0);
+  const [tamagoShopIndex, setTamagoShopIndex] = useState(0);
   const [coinsSpent, setCoinsSpent] = useState(0);
   const [shopConfirm, setShopConfirm] = useState<string | null>(null);
+  const [tamagoShopConfirm, setTamagoShopConfirm] = useState<string | null>(
+    null,
+  );
   const [shopError, setShopError] = useState<string | null>(null);
+  const [tamagoShopError, setTamagoShopError] = useState<string | null>(null);
   const [bgmEnabled, setBgmEnabled] = useState(true);
   const [actionSoundEnabled, setActionSoundEnabled] = useState(true);
 
@@ -239,6 +246,21 @@ export default function NoaTamagotchi() {
     setShopConfirm(null);
   };
 
+  const handleTamagoBuy = (id: string) => {
+    const item = tamagoShopItems.find((i) => i.id === id);
+    if (!item) return;
+    if (money < item.price) {
+      setTamagoShopError("❌ No tienes suficientes monedas");
+      setTamagoShopConfirm(null);
+      return;
+    }
+    const spent = coinsSpent + item.price;
+    setCoinsSpent(spent);
+    localStorage.setItem("coinsSpent", String(spent));
+    setTamagoShopError(null);
+    setTamagoShopConfirm(null);
+  };
+
   const playActionSound = () => {
     if (!actionSoundEnabled) return;
     const el = document.getElementById(
@@ -276,6 +298,21 @@ export default function NoaTamagotchi() {
       return;
     }
 
+    if (tamagoShopVisible) {
+      playActionSound();
+      if (tamagoShopConfirm) {
+        handleTamagoBuy(tamagoShopConfirm);
+      } else if (tamagoShopIndex === tamagoShopItems.length) {
+        setTamagoShopVisible(false);
+        setTamagoShopIndex(0);
+        setTamagoShopError(null);
+        setScreen("main");
+      } else {
+        setTamagoShopConfirm(tamagoShopItems[tamagoShopIndex].id);
+      }
+      return;
+    }
+
     if (gamesVisible) {
       playActionSound();
       startSelectedGame();
@@ -289,8 +326,8 @@ export default function NoaTamagotchi() {
     }
 
     if (selectedIcon === "shop") {
-      setShopVisible(true);
-      setShopIndex(0);
+      setTamagoShopVisible(true);
+      setTamagoShopIndex(0);
       return;
     }
     if (selectedIcon === "games") {
@@ -344,6 +381,15 @@ export default function NoaTamagotchi() {
         setShopVisible(false);
         setShopIndex(0);
         setShopError(null);
+        setScreen("main");
+      }
+    } else if (tamagoShopVisible) {
+      if (tamagoShopConfirm) {
+        setTamagoShopConfirm(null);
+      } else {
+        setTamagoShopVisible(false);
+        setTamagoShopIndex(0);
+        setTamagoShopError(null);
         setScreen("main");
       }
     } else if (visible) {
@@ -572,16 +618,16 @@ export default function NoaTamagotchi() {
         {screen === "main" && (
           <div className="absolute bottom-2 left-2 right-2 flex justify-between z-20">
             <div
-              className={`w-[35px] h-[40px] pixel-art cursor-pointer flex items-center justify-center ${
+              className={`w-[25px] h-[25px] pixel-art cursor-pointer flex items-center justify-center ${
                 selectedIcon === "shop" ? "animate-pulse" : ""
               }`}
               onClick={() => {
-                setShopIndex(0);
-                setShopVisible(true);
+                setTamagoShopIndex(0);
+                setTamagoShopVisible(true);
               }}
             >
               <img
-                src="/images/icons/shop.png"
+                src="/images/icons/tienda.png"
                 alt="Shop"
                 className="w-full h-full"
               />
@@ -602,7 +648,7 @@ export default function NoaTamagotchi() {
               />
             </div>
             <div
-              className={`w-[30px] h-[40px] pixel-art cursor-pointer flex items-center justify-center ${
+              className={`w-[25px] h-[25px] pixel-art cursor-pointer flex items-center justify-center ${
                 selectedIcon === "settings" ? " animate-pulse" : ""
               }`}
               onClick={() => {
@@ -611,7 +657,7 @@ export default function NoaTamagotchi() {
               }}
             >
               <img
-                src="/images/icons/settings.png"
+                src="/images/icons/ajustes.png"
                 alt="Config"
                 className="w-full h-full"
               />
@@ -637,13 +683,22 @@ export default function NoaTamagotchi() {
           confirming={shopConfirm}
           error={shopError}
         />
+        <TamagoShopModal
+          visible={tamagoShopVisible}
+          selectedIndex={tamagoShopIndex}
+          money={money}
+          confirming={tamagoShopConfirm}
+          error={tamagoShopError}
+        />
         <GamesModal visible={gamesVisible} selectedIndex={selectedGameIndex} />
       </div>
       {/* -------------------- CONTROLES -------------------- */}
       <div className="gameboy-controls">
         <ActionButtons
           onFeed={handleAButton}
-          onPet={shopVisible || visible ? handleBack : petNoa}
+          onPet={
+            shopVisible || tamagoShopVisible || visible ? handleBack : petNoa
+          }
           onSleep={() => {
             if (!isSleeping && !noaDead) setIsSleeping(true);
           }}
@@ -668,8 +723,15 @@ export default function NoaTamagotchi() {
             } else if (shopVisible) {
               const max = shopItems.length;
               if (dir === "up")
-                setShopIndex((i) => (i - 1 + max + 1) % (max + 1));
-              else if (dir === "down") setShopIndex((i) => (i + 1) % (max + 1));
+                setShopIndex((i) => Math.max(0, i - 1));
+              else if (dir === "down")
+                setShopIndex((i) => Math.min(max, i + 1));
+            } else if (tamagoShopVisible) {
+              const max = tamagoShopItems.length;
+              if (dir === "up")
+                setTamagoShopIndex((i) => Math.max(0, i - 1));
+              else if (dir === "down")
+                setTamagoShopIndex((i) => Math.min(max, i + 1));
             } else if (gamesVisible) {
               changeMenuSelection(dir === "left" ? "left" : "right");
             } else if (screen === "main") {
