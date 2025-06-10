@@ -723,14 +723,15 @@ export default function NoaTamagotchi() {
             } else if (shopVisible) {
               const max = shopItems.length;
               if (dir === "up")
-                setShopIndex((i) => (i - 1 + max + 1) % (max + 1));
-              else if (dir === "down") setShopIndex((i) => (i + 1) % (max + 1));
+                setShopIndex((i) => Math.max(0, i - 1));
+              else if (dir === "down")
+                setShopIndex((i) => Math.min(max, i + 1));
             } else if (tamagoShopVisible) {
               const max = tamagoShopItems.length;
               if (dir === "up")
-                setTamagoShopIndex((i) => (i - 1 + max + 1) % (max + 1));
+                setTamagoShopIndex((i) => Math.max(0, i - 1));
               else if (dir === "down")
-                setTamagoShopIndex((i) => (i + 1) % (max + 1));
+                setTamagoShopIndex((i) => Math.min(max, i + 1));
             } else if (gamesVisible) {
               changeMenuSelection(dir === "left" ? "left" : "right");
             } else if (screen === "main") {
