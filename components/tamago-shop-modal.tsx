@@ -66,26 +66,25 @@ export default function TamagoShopModal({
                 <p className="text-xs">A = Sí, B = No</p>
               </div>
             ) : (
-              <div
-                ref={listRef}
-                className="overflow-y-auto flex flex-col gap-2 pb-2"
-              >
-                {visibleItems.map((item, idx) => (
-                  <div
-                    key={item.id}
-                    className={`w-full flex-shrink-0 flex flex-col items-center px-2 py-2 bg-[#031] border border-green-400 rounded transition-all duration-150 text-center ${selectedIndex === idx ? "ring-2 ring-yellow-300 bg-green-800 animate-pixel-fill" : ""}`}
-                  >
-                    <span className="text-xs mb-1">{item.name}</span>
-                    {item.id !== "exit" && (
-                      <span className="text-[10px]">{item.price} 🪙</span>
-                    )}
-                  </div>
-                ))}
-                {error && <p className="text-red-400 text-xs ml-2">{error}</p>}
-              </div>
-              <div className="mt-2 text-center flex-shrink-0">
-                <p className="text-xs">↑/↓ Navegar</p>
-              </div>
+              <><div
+                  ref={listRef}
+                  className="overflow-y-auto flex flex-col gap-2 pb-2"
+                >
+                  {visibleItems.map((item, idx) => (
+                    <div
+                      key={item.id}
+                      className={`w-full flex-shrink-0 flex flex-col items-center px-2 py-2 bg-[#031] border border-green-400 rounded transition-all duration-150 text-center ${selectedIndex === idx ? "ring-2 ring-yellow-300 bg-green-800 animate-pixel-fill" : ""}`}
+                    >
+                      <span className="text-xs mb-1">{item.name}</span>
+                      {item.id !== "exit" && (
+                        <span className="text-[10px]">{item.price} 🪙</span>
+                      )}
+                    </div>
+                  ))}
+                  {error && <p className="text-red-400 text-xs ml-2">{error}</p>}
+                </div><div className="mt-2 text-center flex-shrink-0">
+                    <p className="text-xs">↑/↓ Navegar</p>
+                  </div></>
             )}
           </div>
         </div>

@@ -618,7 +618,7 @@ export default function NoaTamagotchi() {
         {screen === "main" && (
           <div className="absolute bottom-2 left-2 right-2 flex justify-between z-20">
             <div
-              className={`w-[35px] h-[40px] pixel-art cursor-pointer flex items-center justify-center ${
+              className={`w-[25px] h-[25px] pixel-art cursor-pointer flex items-center justify-center ${
                 selectedIcon === "shop" ? "animate-pulse" : ""
               }`}
               onClick={() => {
@@ -627,7 +627,7 @@ export default function NoaTamagotchi() {
               }}
             >
               <img
-                src="/images/icons/shop.png"
+                src="/images/icons/tienda.png"
                 alt="Shop"
                 className="w-full h-full"
               />
@@ -648,7 +648,7 @@ export default function NoaTamagotchi() {
               />
             </div>
             <div
-              className={`w-[30px] h-[40px] pixel-art cursor-pointer flex items-center justify-center ${
+              className={`w-[25px] h-[25px] pixel-art cursor-pointer flex items-center justify-center ${
                 selectedIcon === "settings" ? " animate-pulse" : ""
               }`}
               onClick={() => {
@@ -657,7 +657,7 @@ export default function NoaTamagotchi() {
               }}
             >
               <img
-                src="/images/icons/settings.png"
+                src="/images/icons/ajustes.png"
                 alt="Config"
                 className="w-full h-full"
               />
