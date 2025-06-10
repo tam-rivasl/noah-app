@@ -37,7 +37,7 @@ export default function TamagoShopModal({
     const itemEl = listRef.current?.children[selectedIndex] as
       | HTMLElement
       | undefined;
-    if (itemEl) itemEl.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    if (itemEl) itemEl.scrollIntoView({ block: "center", behavior: "smooth" });
   }, [selectedIndex]);
 
   return (
