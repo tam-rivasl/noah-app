@@ -63,7 +63,9 @@ export default function NoaTamagotchi() {
   const [tamagoShopIndex, setTamagoShopIndex] = useState(0);
   const [coinsSpent, setCoinsSpent] = useState(0);
   const [shopConfirm, setShopConfirm] = useState<string | null>(null);
-  const [tamagoShopConfirm, setTamagoShopConfirm] = useState<string | null>(null);
+  const [tamagoShopConfirm, setTamagoShopConfirm] = useState<string | null>(
+    null,
+  );
   const [shopError, setShopError] = useState<string | null>(null);
   const [tamagoShopError, setTamagoShopError] = useState<string | null>(null);
   const [bgmEnabled, setBgmEnabled] = useState(true);
@@ -694,7 +696,9 @@ export default function NoaTamagotchi() {
       <div className="gameboy-controls">
         <ActionButtons
           onFeed={handleAButton}
-          onPet={shopVisible || tamagoShopVisible || visible ? handleBack : petNoa}
+          onPet={
+            shopVisible || tamagoShopVisible || visible ? handleBack : petNoa
+          }
           onSleep={() => {
             if (!isSleeping && !noaDead) setIsSleeping(true);
           }}
@@ -723,9 +727,9 @@ export default function NoaTamagotchi() {
               else if (dir === "down") setShopIndex((i) => (i + 1) % (max + 1));
             } else if (tamagoShopVisible) {
               const max = tamagoShopItems.length;
-              if (dir === "left")
+              if (dir === "up")
                 setTamagoShopIndex((i) => (i - 1 + max + 1) % (max + 1));
-              else if (dir === "right")
+              else if (dir === "down")
                 setTamagoShopIndex((i) => (i + 1) % (max + 1));
             } else if (gamesVisible) {
               changeMenuSelection(dir === "left" ? "left" : "right");
