@@ -100,6 +100,7 @@ export default function ShopModal({
           </div>
         </div>
       </div>
+        </div>
     </div>
   );
 }

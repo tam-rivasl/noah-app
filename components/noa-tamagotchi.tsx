@@ -487,9 +487,8 @@ export default function NoaTamagotchi() {
             <div className="absolute top-1 left-1 right-1 flex flex-col items-end z-20">
               <div className="w-full flex justify-center">
                 <StatusBars noaState={noaState} />
-                
               </div>
-               <div className="pixel-font text-xs text-white  ">
+              <div className="pixel-font text-xs text-white  ">
                 {time.toLocaleTimeString([], {
                   hour: "2-digit",
                   minute: "2-digit",
@@ -498,7 +497,7 @@ export default function NoaTamagotchi() {
             </div>
 
             {/* Animación de Noa según estado */}
-            <div className="relative z-10 flex flex-col items-center justify-end w-full  p-2 pt-6">
+            <div className="relative z-10 flex flex-col items-center justify-end w-full p-2 pt-6">
               <div className="relative flex items-end justify-center w-full h-full">
                 {isSleeping ? (
                   <div className="w-[40px] h-[80px]">
@@ -510,133 +509,114 @@ export default function NoaTamagotchi() {
                   </div>
                 ) : currentAction === "petting" ? (
                   <div className="w-[40px] h-[80px]">
+                    <NoaPetting />
+                  </div>
+                ) : (
+                  <div className="w-[40px] h-[80px]">
+                    <NoaWalking />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* === Alerta 8 bit según emoción === */}
+            {emotion !== "normal" && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/50 z-30">
+                <div
+                  className="pixel-font text-red-400 text-[10px] px-2 py-1 border border-red-400 rounded animate-shake"
+                  style={{ backgroundColor: "rgba(0,0,0,0.7)" }}
+                >
+                  {emotion === "hungry" && "¡Noah tiene HAMBRE! 🍖"}
+                  {emotion === "tired" && "¡Noah está CANSADO! 💤"}
+                  {emotion === "sad" && "¡Noah está TRISTE! 🤕"}
+                </div>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* === MiniGameCatch === */}
+        {screen === "catch" && !noaDead && !isSleeping && (
+          <MiniGameCatch
+            onExit={handleBack}
+            moveCommand={moveCommand}
+            startCommand={startCommand}
+          />
+        )}
+
+        {/* === MiniGameSpace === */}
+        {screen === "space" && !noaDead && !isSleeping && (
+          <MiniGameSpace
+            onExit={handleBack}
+            moveCommand={moveCommand}
+            startCommand={startCommand}
+          />
+        )}
+
+        {/* === Game Over (Tamagotchi) === */}
+        {noaDead && (
+          <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center text-white pixel-font">
             <img
               src="/images/rip.png"
               alt="ripNoa"
               className="w-[200px] h-[150px] mb-2 pixel-art"
             />
+            <h1 className="text-sm font-bold mb-1 pixel-font">GAME OVER</h1>
             <p className="text-xs mb-2 pixel-font">
               Pulsa “RESET” para reiniciar
             </p>
+          </div>
+        )}
+
+        {/* Iconos inferiores */}
+        {screen === "main" && (
           <div className="absolute bottom-2 left-2 right-2 flex justify-between z-20">
-            <div className="flex flex-col items-center">
-              <span className="pixel-font text-[8px] leading-none mb-1">
-                Shop
-              </span>
-              <div
-                className={`w-[30px] h-[30px] pixel-art cursor-pointer flex items-center justify-center ${
-                  selectedIcon === "shop" ? "animate-bounce-random" : ""
-                }`}
-                onClick={() => {
-                  setShopIndex(0);
-                  setShopVisible(true);
-                }}
-              >
-                <img
-                  src="/images/tienda.png"
-                  alt="Shop"
-                  className="w-full h-full"
-                />
-              </div>
-            <div className="flex flex-col items-center">
-              <span className="pixel-font text-[8px] leading-none mb-1">
-                Games
-              </span>
-              <div
-                className={`w-[30px] h-[30px] pixel-art cursor-pointer flex items-center justify-center ${
-                  selectedIcon === "games" ? "animate-bounce-random" : ""
-                }`}
-                onClick={() => {
-                  setGamesVisible(true);
-                  setSelectedGameIndex(0);
-                }}
-              >
-                <img
-                  src="/images/juegos.png"
-                  alt="Games"
-                  className="w-full h-full"
-                />
-              </div>
-            <div className="flex flex-col items-center">
-              <span className="pixel-font text-[8px] leading-none mb-1">
-                Settings
-              </span>
-              <div
-                className={`w-[30px] h-[30px] pixel-art cursor-pointer flex items-center justify-center ${
-                  selectedIcon === "settings" ? "animate-bounce-random" : ""
-                }`}
-                onClick={() => {
-                  setAudioIndex(0);
-                  setShowSoundModal(true);
-                }}
-              >
-                <img
-                  src="/images/ajustes.png"
-                  alt="Config"
-                  className="w-full h-full"
-                />
-              </div>
-              if (dir === "left")
-                setAudioIndex((i) => (i - 1 + max + 1) % (max + 1));
-              else if (dir === "right")
-                setAudioIndex((i) => (i + 1) % (max + 1));
-              if (dir === "left")
-                setShopIndex((i) => (i - 1 + max + 1) % (max + 1));
-              else if (dir === "right")
-                setShopIndex((i) => (i + 1) % (max + 1));
-              <img src="/images/tienda.png" alt="Shop" className="w-full h-full" />
-            </div>
-          <div className="flex flex-col items-center">
-            <span className="pixel-font text-[8px] leading-none mb-1">Games</span>
             <div
-              className={`w-[30px] h-[30px] pixel-art cursor-pointer flex items-center justify-center ${
-                selectedIcon === "games" ? "animate-bounce-random" : ""
+              className={`w-[35px] h-[40px] pixel-art cursor-pointer flex items-center justify-center ${
+                selectedIcon === "shop" ? "animate-pulse" : ""
+              }`}
+              onClick={() => {
+                setShopIndex(0);
+                setShopVisible(true);
+              }}
+            >
+              <img
+                src="/images/icons/shop.png"
+                alt="Shop"
+                className="w-full h-full"
+              />
+            </div>
+            <div
+              className={`w-[25px] h-[25px] pixel-art cursor-pointer flex items-center justify-center ${
+                selectedIcon === "games" ? " animate-pulse" : ""
               }`}
               onClick={() => {
                 setGamesVisible(true);
                 setSelectedGameIndex(0);
               }}
             >
-              <img src="/images/juegos.png" alt="Games" className="w-full h-full" />
+              <img
+                src="/images/icons/games.png"
+                alt="Games"
+                className="w-full h-full"
+              />
             </div>
-          <div className="flex flex-col items-center">
-            <span className="pixel-font text-[8px] leading-none mb-1">Settings</span>
             <div
-              className={`w-[30px] h-[30px] pixel-art cursor-pointer flex items-center justify-center ${
-                selectedIcon === "settings" ? "animate-bounce-random" : ""
+              className={`w-[30px] h-[40px] pixel-art cursor-pointer flex items-center justify-center ${
+                selectedIcon === "settings" ? " animate-pulse" : ""
               }`}
               onClick={() => {
                 setAudioIndex(0);
                 setShowSoundModal(true);
               }}
             >
-              <img src="/images/ajustes.png" alt="Config" className="w-full h-full" />
+              <img
+                src="/images/icons/settings.png"
+                alt="Config"
+                className="w-full h-full"
+              />
             </div>
-              if (dir === "left") setShopIndex((i) => (i - 1 + max + 1) % (max + 1));
-              else if (dir === "right") setShopIndex((i) => (i + 1) % (max + 1));
-          <div
-            className={`w-[25px] h-[25px] pixel-art cursor-pointer flex items-center justify-center ${
-              selectedIcon === "games" ? " animate-pulse" : ""
-            }`}
-            onClick={() => {
-              setGamesVisible(true);
-              setSelectedGameIndex(0);
-            }}
-          >
-            <img src="/images/icons/games.png" alt="Games" className="w-full h-full" />
           </div>
-          <div
-            className={`w-[30px] h-[40px] pixel-art cursor-pointer flex items-center justify-center ${
-              selectedIcon === "settings" ? " animate-pulse" : ""
-            }`}
-            onClick={() => {
-              setAudioIndex(0);
-              setShowSoundModal(true);
-            }}
-          >
-            <img src="/images/icons/settings.png" alt="Config" className="w-full h-full" />
-          </div>
-        </div>
         )}
 
         <AudioSettingsModal
@@ -681,11 +661,14 @@ export default function NoaTamagotchi() {
           onMove={(dir) => {
             if (visible) {
               const max = 4;
-              if (dir === "left") setAudioIndex((i) => (i - 1 + max + 1) % (max + 1));
-              else if (dir === "right") setAudioIndex((i) => (i + 1) % (max + 1));
+              if (dir === "left")
+                setAudioIndex((i) => (i - 1 + max + 1) % (max + 1));
+              else if (dir === "right")
+                setAudioIndex((i) => (i + 1) % (max + 1));
             } else if (shopVisible) {
               const max = shopItems.length;
-              if (dir === "up") setShopIndex((i) => (i - 1 + max + 1) % (max + 1));
+              if (dir === "up")
+                setShopIndex((i) => (i - 1 + max + 1) % (max + 1));
               else if (dir === "down") setShopIndex((i) => (i + 1) % (max + 1));
             } else if (gamesVisible) {
               changeMenuSelection(dir === "left" ? "left" : "right");
