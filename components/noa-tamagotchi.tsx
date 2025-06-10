@@ -472,7 +472,7 @@ export default function NoaTamagotchi() {
 
       {/* -------------------- PANTALLA -------------------- */}
       <div
-        className="gameboy-screen relative overflow-hidden"
+        className="gameboy-screen relative"
         style={{
           backgroundImage: `url(${backgroundImage})`,
           backgroundSize: "cover",
@@ -643,6 +643,7 @@ export default function NoaTamagotchi() {
           onToggleSfx={() => setActionSoundEnabled((b) => !b)}
           selectedIndex={audioIndex}
         />
+        
         <ShopModal
           visible={shopVisible}
           selectedIndex={shopIndex}

@@ -6,9 +6,7 @@ export type ShopModalProps = {
   visible: boolean;
   selectedIndex: number;
   money: number;
-  /** id del ítem en proceso de confirmación */
   confirming: string | null;
-  /** mensaje de error por falta de saldo */
   error: string | null;
 };
 
@@ -47,30 +45,40 @@ export default function ShopModal({
 
   return (
     <div className="absolute inset-0 bg-black/80 z-50 flex items-center justify-center p-2 overflow-y-auto">
-      <div className="pixel-font bg-[#001] text-blue-200 border-4 border-blue-400 shadow-[6px_6px_0px_#000] p-4 w-full max-w-xs rounded-xl flex flex-col">
-        <h2 className="text-lg border-b border-blue-400 pb-1 text-center mb-2">🛍️ Tienda Tamagotchi</h2>
-        <div className="text-xs text-center bg-blue-900 py-1 px-2 rounded mb-2">💰 Dinero disponible: <strong>{money}</strong> 🪙</div>
-        <div className="flex-grow overflow-hidden">
+      <div className="pixel-font bg-[#001] text-blue-200 border-4 border-blue-400 shadow-[6px_6px_0px_#000] p-4 w-full max-w-sm rounded-xl flex flex-col max-h-screen">
+        {/* HEADER SIEMPRE VISIBLE */}
+        <h2 className="text-lg border-b border-blue-400 pb-1 text-center mb-2">
+          🛍️ Tienda Tamagotchi
+        </h2>
+        <div className="text-xs text-center bg-blue-900 py-1 px-2 rounded mb-2">
+          💰 Dinero disponible: <strong>{money}</strong> 🪙
+        </div>
+
+        {/* CONTENIDO CON SCROLL SI HAY MUCHO */}
+        <div className="flex-grow overflow-y-auto">
           {confirming ? (
             <div className="text-center space-y-2">
               <p>
-                ¿Comprar{' '}
-                <strong>{shopItems.find((i) => i.id === confirming)?.name}</strong>{' '}
+                ¿Comprar{" "}
+                <strong>
+                  {shopItems.find((i) => i.id === confirming)?.name}
+                </strong>{" "}
                 por {shopItems.find((i) => i.id === confirming)?.price} 🪙?
               </p>
-              <p className="text-xs">A = Sí, B = No</p>
             </div>
           ) : (
-            <div ref={listRef} className="overflow-y-auto flex flex-col gap-2 pb-2">
+            <div ref={listRef} className="flex flex-col gap-2 pb-2">
               {visibleItems.map((item, idx) => (
                 <div
                   key={item.id}
                   className={`px-2 py-1 border border-blue-400 rounded bg-[#113] text-center transition-all ${
-                    selectedIndex === idx ? 'ring-2 ring-yellow-300 bg-blue-800 animate-pixel-fill' : ''
+                    selectedIndex === idx
+                      ? "ring-2 ring-yellow-300 bg-blue-800 animate-pixel-fill"
+                      : ""
                   }`}
                 >
                   <span className="text-sm">{item.name}</span>
-                  {item.id !== 'exit' && (
+                  {item.id !== "exit" && (
                     <span className="block text-[10px]">{item.price} 🪙</span>
                   )}
                 </div>
@@ -78,13 +86,16 @@ export default function ShopModal({
               {error && <p className="text-red-400 text-xs ml-2">{error}</p>}
             </div>
           )}
+        </div>
 
-          <div className="mt-2 text-center space-y-1">
-            {confirming ? null : (
-              <p className="text-xs">{selectedItem.id === 'exit' ? 'A = Salir' : 'A = Comprar'}</p>
-            )}
-            <p className="text-xs">B = Volver</p>
-          </div>
+        {/* FOOTER */}
+        <div className="mt-2 text-center space-y-1">
+          {!confirming && (
+            <p className="text-xs">
+              {selectedItem.id === "exit" ? "A = Salir" : "A = Comprar"}
+            </p>
+          )}
+          <p className="text-xs">B = Volver</p>
         </div>
       </div>
     </div>
