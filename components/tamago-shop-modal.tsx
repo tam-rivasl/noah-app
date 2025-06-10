@@ -43,7 +43,7 @@ export default function TamagoShopModal({
   return (
     <div className="absolute inset-0 bg-black/80 z-50 flex items-start justify-center p-2 overflow-y-auto">
       <div className="pixel-font bg-[#102] text-pink-200 border-4 border-pink-400 shadow-[6px_6px_0px_#000] p-4 w-full max-w-xs rounded-xl flex flex-col justify-between">
-        <div className="flex flex-col gap-2 overflow-hidden h-full">
+        <div className="flex flex-col gap-2 h-full">
           <div className="flex-shrink-0">
             <h2 className="text-lg border-b-2 border-pink-400 pb-1 text-center">
               🛒 Tamago Shop
@@ -52,7 +52,7 @@ export default function TamagoShopModal({
               💰 Dinero disponible: <strong>{money}</strong> 🪙
             </div>
           </div>
-          <div className="flex-grow overflow-hidden flex flex-col justify-between">
+          <div className="flex-grow flex flex-col justify-between">
             {confirming ? (
               <div className="text-center space-y-2">
                 <p>
@@ -84,17 +84,6 @@ export default function TamagoShopModal({
                 {error && <p className="text-red-400 text-xs ml-2">{error}</p>}
               </div>
             )}
-            <div className="mt-4 text-center flex-shrink-0 space-y-1">
-              {confirming ? null : (
-                <>
-                  <p className="text-xs">
-                    {selectedItem.id === "exit" ? "A = Salir" : "A = Comprar"}
-                  </p>
-                  <p className="text-xs">↑/↓ Navegar</p>
-                </>
-              )}
-              <p className="text-xs">B = Volver</p>
-            </div>
           </div>
         </div>
       </div>
