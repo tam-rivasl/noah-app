@@ -69,7 +69,10 @@ export default function TamagoShopModal({
             )}
             <div className="mt-4 text-center flex-shrink-0 space-y-1">
               {confirming ? null : (
-                <p className="text-xs">{selectedItem.id === "exit" ? "A = Salir" : "A = Comprar"}</p>
+                <>
+                  <p className="text-xs">{selectedItem.id === "exit" ? "A = Salir" : "A = Comprar"}</p>
+                  <p className="text-xs">←/→ Navegar</p>
+                </>
               )}
               <p className="text-xs">B = Volver</p>
             </div>

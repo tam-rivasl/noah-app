@@ -723,9 +723,9 @@ export default function NoaTamagotchi() {
               else if (dir === "down") setShopIndex((i) => (i + 1) % (max + 1));
             } else if (tamagoShopVisible) {
               const max = tamagoShopItems.length;
-              if (dir === "up")
+              if (dir === "left")
                 setTamagoShopIndex((i) => (i - 1 + max + 1) % (max + 1));
-              else if (dir === "down")
+              else if (dir === "right")
                 setTamagoShopIndex((i) => (i + 1) % (max + 1));
             } else if (gamesVisible) {
               changeMenuSelection(dir === "left" ? "left" : "right");
