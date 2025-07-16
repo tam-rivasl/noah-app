@@ -123,10 +123,13 @@ export default function MiniGameCatch({ onExit, moveCommand, startCommand }: Min
 
   // -------------- Iniciar juego con el botón Start --------------
   useEffect(() => {
-    if (!started && currentLine >= instructions.length && startCommand) {
+    // Permite iniciar el juego en cualquier momento, saltando las
+    // instrucciones si aún se están mostrando
+    if (!started && startCommand) {
+      setCurrentLine(instructions.length);
       setStarted(true);
     }
-  }, [startCommand, started]);
+  }, [startCommand, started, instructions.length]);
 
   // -------------- Manejo de D-Pad --------------
   useEffect(() => {

@@ -616,53 +616,67 @@ export default function NoaTamagotchi() {
 
         {/* Iconos inferiores */}
         {screen === "main" && (
-          <div className="absolute bottom-2 left-2 right-2 flex justify-between z-20">
-            <div
-              className={`w-[25px] h-[25px] pixel-art cursor-pointer flex items-center justify-center ${
-                selectedIcon === "shop" ? "animate-pulse" : ""
-              }`}
-              onClick={() => {
-                setTamagoShopIndex(0);
-                setTamagoShopVisible(true);
-              }}
-            >
-              <img
-                src="/images/icons/tienda.png"
-                alt="Shop"
-                className="w-full h-full"
-              />
+          <>
+            {/* Nombre del icono seleccionado */}
+            {selectedIcon !== "none" && (
+              <div className="absolute bottom-9 left-0 right-0 flex justify-center z-20">
+                <span className="pixel-font text-xs text-white">
+                  {selectedIcon === "shop"
+                    ? "Tienda"
+                    : selectedIcon === "games"
+                    ? "Games"
+                    : "Settings"}
+                </span>
+              </div>
+            )}
+            <div className="absolute bottom-2 left-2 right-2 flex justify-between z-20">
+              <div
+                className={`w-[25px] h-[25px] pixel-art cursor-pointer flex items-center justify-center ${
+                  selectedIcon === "shop" ? "animate-pulse" : ""
+                }`}
+                onClick={() => {
+                  setTamagoShopIndex(0);
+                  setTamagoShopVisible(true);
+                }}
+              >
+                <img
+                  src="/images/icons/tienda.png"
+                  alt="Shop"
+                  className="w-full h-full"
+                />
+              </div>
+              <div
+                className={`w-[25px] h-[25px] pixel-art cursor-pointer flex items-center justify-center ${
+                  selectedIcon === "games" ? " animate-pulse" : ""
+                }`}
+                onClick={() => {
+                  setGamesVisible(true);
+                  setSelectedGameIndex(0);
+                }}
+              >
+                <img
+                  src="/images/icons/games.png"
+                  alt="Games"
+                  className="w-full h-full"
+                />
+              </div>
+              <div
+                className={`w-[25px] h-[25px] pixel-art cursor-pointer flex items-center justify-center ${
+                  selectedIcon === "settings" ? " animate-pulse" : ""
+                }`}
+                onClick={() => {
+                  setAudioIndex(0);
+                  setShowSoundModal(true);
+                }}
+              >
+                <img
+                  src="/images/icons/ajustes.png"
+                  alt="Config"
+                  className="w-full h-full"
+                />
+              </div>
             </div>
-            <div
-              className={`w-[25px] h-[25px] pixel-art cursor-pointer flex items-center justify-center ${
-                selectedIcon === "games" ? " animate-pulse" : ""
-              }`}
-              onClick={() => {
-                setGamesVisible(true);
-                setSelectedGameIndex(0);
-              }}
-            >
-              <img
-                src="/images/icons/games.png"
-                alt="Games"
-                className="w-full h-full"
-              />
-            </div>
-            <div
-              className={`w-[25px] h-[25px] pixel-art cursor-pointer flex items-center justify-center ${
-                selectedIcon === "settings" ? " animate-pulse" : ""
-              }`}
-              onClick={() => {
-                setAudioIndex(0);
-                setShowSoundModal(true);
-              }}
-            >
-              <img
-                src="/images/icons/ajustes.png"
-                alt="Config"
-                className="w-full h-full"
-              />
-            </div>
-          </div>
+          </>
         )}
 
         <AudioSettingsModal

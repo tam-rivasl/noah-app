@@ -127,10 +127,13 @@ export default function MiniGameSpace({ onExit, moveCommand, startCommand }: Min
 
   // ——— Iniciar juego con el botón Start ———
   useEffect(() => {
-    if (!started && currentLine >= instructions.length && startCommand) {
+    // Si el jugador presiona Start antes de finalizar las instrucciones
+    // iniciamos de inmediato saltándolas por completo
+    if (!started && startCommand) {
+      setCurrentLine(instructions.length);
       handleStart();
     }
-  }, [startCommand, started, currentLine, instructions.length, handleStart]);
+  }, [startCommand, started, handleStart, instructions.length]);
 
   // ——— Listener de teclado: B sale si GameOver ———
   useEffect(() => {
