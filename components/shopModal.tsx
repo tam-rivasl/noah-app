@@ -12,11 +12,21 @@ export type ShopModalProps = {
   error: string | null;
 };
 
-export const shopItems = [
+export type ShopItem = {
+  id: string;
+  name: string;
+  price: number;
+  category: string;
+  image?: string;
+  color?: string;
+};
+
+export const shopItems: readonly ShopItem[] = [
   { id: "food", name: "🍗 Comida deliciosa", price: 10, category: "food" },
   { id: "plant", name: "🌱 Planta decorativa", price: 15, category: "toys" },
   { id: "teddy", name: "🧸 Peluche suave", price: 20, category: "toys" },
   { id: "bed", name: "🛏️ Cama nueva cómoda", price: 30, category: "themes" },
+  { id: "blue-bg", name: "🔵 Fondo azul", price: 25, category: "themes", color: "#3b82f6" },
 ] as const;
 
 export default function ShopModal({
@@ -95,7 +105,7 @@ export default function ShopModal({
                       );
                     }
                     elements.push(
-                      <div
+                    <div
                         key={item.id}
                         data-index={index}
                         className={`min-w-[90px] flex-shrink-0 flex flex-col items-center px-2 py-2 bg-[#113] border border-blue-400 rounded transition-all duration-150 text-center ${
@@ -104,7 +114,20 @@ export default function ShopModal({
                             : ""
                         }`}
                       >
-                        <span className="text-xs mb-1">{item.name}</span>
+                        {item.image && (
+                          <img
+                            src={item.image}
+                            alt={item.name}
+                            className="w-6 h-6 mb-1 object-cover"
+                          />
+                        )}
+                        {item.color && (
+                          <div
+                            className="w-6 h-6 mb-1 rounded"
+                            style={{ backgroundColor: item.color }}
+                          />
+                        )}
+                        <span className="text-xs mb-1 text-center">{item.name}</span>
                         {item.id !== "exit" && (
                           <span className="text-[10px]">{item.price} 🪙</span>
                         )}

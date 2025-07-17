@@ -267,6 +267,10 @@ export default function NoaTamagotchi() {
       setInventory((inv) => ({ ...inv, plant: true }));
     } else if (id === "teddy") {
       setInventory((inv) => ({ ...inv, teddy: true }));
+    } else if (item.color) {
+      setBackgroundImage(item.color);
+    } else if (item.image) {
+      setBackgroundImage(item.image);
     }
     setShopError(null);
     setShopConfirm(null);
@@ -543,11 +547,15 @@ export default function NoaTamagotchi() {
       {/* -------------------- PANTALLA -------------------- */}
       <div
         className="gameboy-screen relative overflow-hidden"
-        style={{
-          backgroundImage: `url(${backgroundImage})`,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-        }}
+        style={
+          backgroundImage.startsWith("#")
+            ? { backgroundColor: backgroundImage }
+            : {
+                backgroundImage: `url(${backgroundImage})`,
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+              }
+        }
       >
         {/* === Press Start === */}
         {screen === "start" && !noaDead && (
