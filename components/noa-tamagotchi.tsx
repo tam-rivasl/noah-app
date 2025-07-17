@@ -12,8 +12,7 @@ import { NoaPetting } from "./noa-petting";
 import MiniGameCatch from "./mini-game-catch";
 import MiniGameSpace from "./mini-game-space";
 import AudioSettingsModal from "./AudioSettingsModal";
-import ShopModal, { shopItems } from "./shopModal";
-import TamagoShopModal, { tamagoShopItems } from "./tamago-shop-modal";
+import ShopScreen, { shopItems } from "./shop-screen";
 import GamesModal from "./games-modal";
 
 export type NoaState = {
@@ -23,6 +22,11 @@ export type NoaState = {
   lastUpdated: number;
 };
 
+type Inventory = {
+  plant: boolean;
+  teddy: boolean;
+};
+
 const initialState: NoaState = {
   hunger: 80,
   happiness: 80,
@@ -30,8 +34,14 @@ const initialState: NoaState = {
   lastUpdated: Date.now(),
 };
 
+const initialInventory: Inventory = {
+  plant: false,
+  teddy: false,
+};
+
 export default function NoaTamagotchi() {
   const [noaState, setNoaState] = useState<NoaState>(initialState);
+  const [inventory, setInventory] = useState<Inventory>(initialInventory);
   const [currentAction, setCurrentAction] = useState<
     "eating" | "petting" | "gaming" | null
   >(null);
@@ -52,7 +62,6 @@ export default function NoaTamagotchi() {
   const [noaDead, setNoaDead] = useState(false);
   const [visible, setShowSoundModal] = useState(false);
   const [shopVisible, setShopVisible] = useState(false);
-  const [tamagoShopVisible, setTamagoShopVisible] = useState(false);
   const [volume, setVolume] = useState(1); // de 0.0 a 1.0
   const [selectedIcon, setSelectedIcon] = useState<
     "none" | "settings" | "shop" | "games"
@@ -60,38 +69,25 @@ export default function NoaTamagotchi() {
   const [gamesVisible, setGamesVisible] = useState(false);
   const [audioIndex, setAudioIndex] = useState(0);
   const [shopIndex, setShopIndex] = useState(0);
-  const [tamagoShopIndex, setTamagoShopIndex] = useState(0);
+  const [shopCategory, setShopCategory] = useState<"food" | "toys" | "themes" | null>(null);
   const [coinsSpent, setCoinsSpent] = useState(0);
+  const [coinsEarned, setCoinsEarned] = useState(0);
   const [shopConfirm, setShopConfirm] = useState<string | null>(null);
-  const [tamagoShopConfirm, setTamagoShopConfirm] = useState<string | null>(
-    null,
-  );
   const [shopError, setShopError] = useState<string | null>(null);
-  const [tamagoShopError, setTamagoShopError] = useState<string | null>(null);
   const [bgmEnabled, setBgmEnabled] = useState(true);
   const [actionSoundEnabled, setActionSoundEnabled] = useState(true);
 
   useEffect(() => {
-    const stored = localStorage.getItem("coinsSpent");
-    if (stored) setCoinsSpent(parseInt(stored, 10));
+    const spent = localStorage.getItem("coinsSpent");
+    if (spent) setCoinsSpent(parseInt(spent, 10));
+    const earned = localStorage.getItem("coinsEarned");
+    if (earned) setCoinsEarned(parseInt(earned, 10));
+    const inv = localStorage.getItem("inventory");
+    if (inv) setInventory(JSON.parse(inv));
   }, []);
 
-  const getTotalScore = useCallback(() => {
-    try {
-      const catchRecords = JSON.parse(
-        localStorage.getItem("catchRecords") || "[]",
-      );
-      const spaceRecords = JSON.parse(
-        localStorage.getItem("spaceRecords") || "[]",
-      );
-      const all = [...catchRecords, ...spaceRecords];
-      return all.reduce((sum: number, r: any) => sum + (r.score || 0), 0);
-    } catch {
-      return 0;
-    }
-  }, []);
 
-  const money = getTotalScore() - coinsSpent;
+  const money = coinsEarned - coinsSpent;
 
   // —————————————————————————————————————————————————
   // 1) Cargar estado guardado
@@ -118,6 +114,10 @@ export default function NoaTamagotchi() {
       JSON.stringify({ ...noaState, lastUpdated: Date.now() }),
     );
   }, [noaState]);
+
+  useEffect(() => {
+    localStorage.setItem("inventory", JSON.stringify(inventory));
+  }, [inventory]);
 
   // 3) Decaimiento de stats cada minuto
   useEffect(() => {
@@ -242,23 +242,27 @@ export default function NoaTamagotchi() {
     const spent = coinsSpent + item.price;
     setCoinsSpent(spent);
     localStorage.setItem("coinsSpent", String(spent));
+    if (id === "food") {
+      feedNoa();
+    } else if (id === "plant") {
+      setInventory((inv) => ({ ...inv, plant: true }));
+    } else if (id === "teddy") {
+      setInventory((inv) => ({ ...inv, teddy: true }));
+    }
     setShopError(null);
     setShopConfirm(null);
+    setShopVisible(false);
+    setShopIndex(0);
+    setShopCategory(null);
+    setScreen("main");
   };
 
-  const handleTamagoBuy = (id: string) => {
-    const item = tamagoShopItems.find((i) => i.id === id);
-    if (!item) return;
-    if (money < item.price) {
-      setTamagoShopError("❌ No tienes suficientes monedas");
-      setTamagoShopConfirm(null);
-      return;
-    }
-    const spent = coinsSpent + item.price;
-    setCoinsSpent(spent);
-    localStorage.setItem("coinsSpent", String(spent));
-    setTamagoShopError(null);
-    setTamagoShopConfirm(null);
+
+  const handleGameEnd = (score: number, newRecord: boolean) => {
+    const reward = 10 + (newRecord ? 5 : 0);
+    const total = coinsEarned + reward;
+    setCoinsEarned(total);
+    localStorage.setItem("coinsEarned", String(total));
   };
 
   const playActionSound = () => {
@@ -287,31 +291,29 @@ export default function NoaTamagotchi() {
       playActionSound();
       if (shopConfirm) {
         handleBuy(shopConfirm);
-      } else if (shopIndex === shopItems.length) {
-        setShopVisible(false);
-        setShopIndex(0);
-        setShopError(null);
-        setScreen("main");
+      } else if (shopCategory === null) {
+        const categories = ["food", "toys", "themes"] as const;
+        if (shopIndex === categories.length) {
+          setShopVisible(false);
+          setShopIndex(0);
+          setShopError(null);
+          setScreen("main");
+        } else {
+          setShopCategory(categories[shopIndex]);
+          setShopIndex(0);
+        }
       } else {
-        setShopConfirm(shopItems[shopIndex].id);
+        const items = shopItems.filter((i) => i.category === shopCategory);
+        if (shopIndex === items.length) {
+          setShopCategory(null);
+          setShopIndex(0);
+        } else {
+          setShopConfirm(items[shopIndex].id);
+        }
       }
       return;
     }
 
-    if (tamagoShopVisible) {
-      playActionSound();
-      if (tamagoShopConfirm) {
-        handleTamagoBuy(tamagoShopConfirm);
-      } else if (tamagoShopIndex === tamagoShopItems.length) {
-        setTamagoShopVisible(false);
-        setTamagoShopIndex(0);
-        setTamagoShopError(null);
-        setScreen("main");
-      } else {
-        setTamagoShopConfirm(tamagoShopItems[tamagoShopIndex].id);
-      }
-      return;
-    }
 
     if (gamesVisible) {
       playActionSound();
@@ -326,8 +328,9 @@ export default function NoaTamagotchi() {
     }
 
     if (selectedIcon === "shop") {
-      setTamagoShopVisible(true);
-      setTamagoShopIndex(0);
+      setShopVisible(true);
+      setShopIndex(0);
+      setShopCategory(null);
       return;
     }
     if (selectedIcon === "games") {
@@ -335,8 +338,6 @@ export default function NoaTamagotchi() {
       setSelectedGameIndex(0);
       return;
     }
-    playActionSound();
-    feedNoa();
   };
 
   // Limpiar acción después de 2s (si no duerme ni está muerto)
@@ -377,19 +378,13 @@ export default function NoaTamagotchi() {
     if (shopVisible) {
       if (shopConfirm) {
         setShopConfirm(null);
+      } else if (shopCategory) {
+        setShopCategory(null);
+        setShopIndex(0);
       } else {
         setShopVisible(false);
         setShopIndex(0);
         setShopError(null);
-        setScreen("main");
-      }
-    } else if (tamagoShopVisible) {
-      if (tamagoShopConfirm) {
-        setTamagoShopConfirm(null);
-      } else {
-        setTamagoShopVisible(false);
-        setTamagoShopIndex(0);
-        setTamagoShopError(null);
         setScreen("main");
       }
     } else if (visible) {
@@ -545,6 +540,12 @@ export default function NoaTamagotchi() {
             {/* Animación de Noa según estado */}
             <div className="relative z-10 flex flex-col items-center justify-end w-full p-2 pt-6">
               <div className="relative flex items-end justify-center w-full h-full">
+                {inventory.plant && (
+                  <span className="absolute left-2 bottom-0 text-xl">🌱</span>
+                )}
+                {inventory.teddy && (
+                  <span className="absolute right-2 bottom-0 text-xl">🧸</span>
+                )}
                 {isSleeping ? (
                   <div className="w-[40px] h-[80px]">
                     <NoaSleeping />
@@ -587,6 +588,7 @@ export default function NoaTamagotchi() {
             onExit={handleBack}
             moveCommand={moveCommand}
             startCommand={startCommand}
+            onGameEnd={handleGameEnd}
           />
         )}
 
@@ -596,6 +598,7 @@ export default function NoaTamagotchi() {
             onExit={handleBack}
             moveCommand={moveCommand}
             startCommand={startCommand}
+            onGameEnd={handleGameEnd}
           />
         )}
 
@@ -616,51 +619,70 @@ export default function NoaTamagotchi() {
 
         {/* Iconos inferiores */}
         {screen === "main" && (
-          <div className="absolute bottom-2 left-2 right-2 flex justify-between z-20">
-            <div
-              className={`w-[25px] h-[25px] pixel-art cursor-pointer flex items-center justify-center ${
-                selectedIcon === "shop" ? "animate-pulse" : ""
-              }`}
-              onClick={() => {
-                setTamagoShopIndex(0);
-                setTamagoShopVisible(true);
-              }}
-            >
-              <img
-                src="/images/icons/tienda.png"
-                alt="Shop"
-                className="w-full h-full"
-              />
-            </div>
-            <div
-              className={`w-[25px] h-[25px] pixel-art cursor-pointer flex items-center justify-center ${
-                selectedIcon === "games" ? " animate-pulse" : ""
-              }`}
-              onClick={() => {
-                setGamesVisible(true);
-                setSelectedGameIndex(0);
-              }}
-            >
-              <img
-                src="/images/icons/games.png"
-                alt="Games"
-                className="w-full h-full"
-              />
-            </div>
-            <div
-              className={`w-[25px] h-[25px] pixel-art cursor-pointer flex items-center justify-center ${
-                selectedIcon === "settings" ? " animate-pulse" : ""
-              }`}
-              onClick={() => {
-                setAudioIndex(0);
-                setShowSoundModal(true);
-              }}
-            >
-              <img
-                src="/images/icons/ajustes.png"
-                alt="Config"
-                className="w-full h-full"
-              />
+          <div className="absolute bottom-2 left-2 right-2 z-20 flex flex-col items-center">
+            {/* Display label when an icon is highlighted */}
+            {selectedIcon !== "none" && (
+              <span className="pixel-font text-xs text-white mb-1">
+                {selectedIcon === "shop"
+                  ? "Tienda"
+                  : selectedIcon === "games"
+                  ? "Games"
+                  : "Settings"}
+              </span>
+            )}
+            <div className="flex justify-between w-full">
+              <div
+                className={`w-[25px] h-[25px] pixel-art cursor-pointer flex items-center justify-center ${
+                  selectedIcon === "shop"
+                    ? "animate-pulse ring-2 ring-yellow-300 animate-pixel-fill"
+                    : ""
+                }`}
+                onClick={() => {
+                  setShopIndex(0);
+                  setShopCategory(null);
+                  setShopVisible(true);
+                }}
+              >
+                <img
+                  src="/images/icons/tienda.png"
+                  alt="Shop"
+                  className="w-full h-full"
+                />
+              </div>
+              <div
+                className={`w-[25px] h-[25px] pixel-art cursor-pointer flex items-center justify-center ${
+                  selectedIcon === "games"
+                    ? "animate-pulse ring-2 ring-yellow-300 animate-pixel-fill"
+                    : ""
+                }`}
+                onClick={() => {
+                  setGamesVisible(true);
+                  setSelectedGameIndex(0);
+                }}
+              >
+                <img
+                  src="/images/icons/games.png"
+                  alt="Games"
+                  className="w-full h-full"
+                />
+              </div>
+              <div
+                className={`w-[25px] h-[25px] pixel-art cursor-pointer flex items-center justify-center ${
+                  selectedIcon === "settings"
+                    ? "animate-pulse ring-2 ring-yellow-300 animate-pixel-fill"
+                    : ""
+                }`}
+                onClick={() => {
+                  setAudioIndex(0);
+                  setShowSoundModal(true);
+                }}
+              >
+                <img
+                  src="/images/icons/ajustes.png"
+                  alt="Config"
+                  className="w-full h-full"
+                />
+              </div>
             </div>
           </div>
         )}
@@ -676,19 +698,13 @@ export default function NoaTamagotchi() {
           onToggleSfx={() => setActionSoundEnabled((b) => !b)}
           selectedIndex={audioIndex}
         />
-        <ShopModal
+        <ShopScreen
           visible={shopVisible}
           selectedIndex={shopIndex}
+          category={shopCategory}
           money={money}
           confirming={shopConfirm}
           error={shopError}
-        />
-        <TamagoShopModal
-          visible={tamagoShopVisible}
-          selectedIndex={tamagoShopIndex}
-          money={money}
-          confirming={tamagoShopConfirm}
-          error={tamagoShopError}
         />
         <GamesModal visible={gamesVisible} selectedIndex={selectedGameIndex} />
       </div>
@@ -696,9 +712,7 @@ export default function NoaTamagotchi() {
       <div className="gameboy-controls">
         <ActionButtons
           onFeed={handleAButton}
-          onPet={
-            shopVisible || tamagoShopVisible || visible ? handleBack : petNoa
-          }
+          onPet={shopVisible || visible ? handleBack : petNoa}
           onSleep={() => {
             if (!isSleeping && !noaDead) setIsSleeping(true);
           }}
@@ -721,17 +735,14 @@ export default function NoaTamagotchi() {
               else if (dir === "right")
                 setAudioIndex((i) => (i + 1) % (max + 1));
             } else if (shopVisible) {
-              const max = shopItems.length;
+              const categoriesCount = 3;
+              const max = shopCategory
+                ? shopItems.filter((i) => i.category === shopCategory).length
+                : categoriesCount;
               if (dir === "up")
                 setShopIndex((i) => Math.max(0, i - 1));
               else if (dir === "down")
                 setShopIndex((i) => Math.min(max, i + 1));
-            } else if (tamagoShopVisible) {
-              const max = tamagoShopItems.length;
-              if (dir === "up")
-                setTamagoShopIndex((i) => Math.max(0, i - 1));
-              else if (dir === "down")
-                setTamagoShopIndex((i) => Math.min(max, i + 1));
             } else if (gamesVisible) {
               changeMenuSelection(dir === "left" ? "left" : "right");
             } else if (screen === "main") {
