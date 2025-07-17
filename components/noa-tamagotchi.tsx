@@ -23,6 +23,12 @@ export type NoaState = {
   lastUpdated: number;
 };
 
+type Inventory = {
+  food: number;
+  plant: boolean;
+  teddy: boolean;
+};
+
 const initialState: NoaState = {
   hunger: 80,
   happiness: 80,
@@ -30,8 +36,15 @@ const initialState: NoaState = {
   lastUpdated: Date.now(),
 };
 
+const initialInventory: Inventory = {
+  food: 0,
+  plant: false,
+  teddy: false,
+};
+
 export default function NoaTamagotchi() {
   const [noaState, setNoaState] = useState<NoaState>(initialState);
+  const [inventory, setInventory] = useState<Inventory>(initialInventory);
   const [currentAction, setCurrentAction] = useState<
     "eating" | "petting" | "gaming" | null
   >(null);
@@ -74,6 +87,8 @@ export default function NoaTamagotchi() {
   useEffect(() => {
     const stored = localStorage.getItem("coinsSpent");
     if (stored) setCoinsSpent(parseInt(stored, 10));
+    const inv = localStorage.getItem("inventory");
+    if (inv) setInventory(JSON.parse(inv));
   }, []);
 
   const getTotalScore = useCallback(() => {
@@ -118,6 +133,10 @@ export default function NoaTamagotchi() {
       JSON.stringify({ ...noaState, lastUpdated: Date.now() }),
     );
   }, [noaState]);
+
+  useEffect(() => {
+    localStorage.setItem("inventory", JSON.stringify(inventory));
+  }, [inventory]);
 
   // 3) Decaimiento de stats cada minuto
   useEffect(() => {
@@ -242,6 +261,13 @@ export default function NoaTamagotchi() {
     const spent = coinsSpent + item.price;
     setCoinsSpent(spent);
     localStorage.setItem("coinsSpent", String(spent));
+    if (id === "food") {
+      setInventory((inv) => ({ ...inv, food: inv.food + 1 }));
+    } else if (id === "plant") {
+      setInventory((inv) => ({ ...inv, plant: true }));
+    } else if (id === "teddy") {
+      setInventory((inv) => ({ ...inv, teddy: true }));
+    }
     setShopError(null);
     setShopConfirm(null);
   };
@@ -257,6 +283,9 @@ export default function NoaTamagotchi() {
     const spent = coinsSpent + item.price;
     setCoinsSpent(spent);
     localStorage.setItem("coinsSpent", String(spent));
+    if (id === "snack") {
+      setInventory((inv) => ({ ...inv, food: inv.food + 1 }));
+    }
     setTamagoShopError(null);
     setTamagoShopConfirm(null);
   };
@@ -335,8 +364,11 @@ export default function NoaTamagotchi() {
       setSelectedGameIndex(0);
       return;
     }
-    playActionSound();
-    feedNoa();
+    if (inventory.food > 0) {
+      playActionSound();
+      setInventory((inv) => ({ ...inv, food: inv.food - 1 }));
+      feedNoa();
+    }
   };
 
   // Limpiar acción después de 2s (si no duerme ni está muerto)
@@ -545,6 +577,12 @@ export default function NoaTamagotchi() {
             {/* Animación de Noa según estado */}
             <div className="relative z-10 flex flex-col items-center justify-end w-full p-2 pt-6">
               <div className="relative flex items-end justify-center w-full h-full">
+                {inventory.plant && (
+                  <span className="absolute left-2 bottom-0 text-xl">🌱</span>
+                )}
+                {inventory.teddy && (
+                  <span className="absolute right-2 bottom-0 text-xl">🧸</span>
+                )}
                 {isSleeping ? (
                   <div className="w-[40px] h-[80px]">
                     <NoaSleeping />

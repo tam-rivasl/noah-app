@@ -14,7 +14,8 @@ export type ShopModalProps = {
 
 export const shopItems = [
   { id: "food", name: "🍗 Comida deliciosa", price: 10 },
-  { id: "toy", name: "🧸 Juguete suave", price: 15 },
+  { id: "plant", name: "🌱 Planta decorativa", price: 15 },
+  { id: "teddy", name: "🧸 Peluche suave", price: 20 },
   { id: "bed", name: "🛏️ Cama nueva cómoda", price: 30 },
 ];
 
