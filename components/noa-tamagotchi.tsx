@@ -616,20 +616,18 @@ export default function NoaTamagotchi() {
 
         {/* Iconos inferiores */}
         {screen === "main" && (
-          <>
-            {/* Nombre del icono seleccionado */}
+          <div className="absolute bottom-2 left-2 right-2 z-20 flex flex-col items-center">
+            {/* Display label when an icon is highlighted */}
             {selectedIcon !== "none" && (
-              <div className="absolute bottom-9 left-0 right-0 flex justify-center z-20">
-                <span className="pixel-font text-xs text-white">
-                  {selectedIcon === "shop"
-                    ? "Tienda"
-                    : selectedIcon === "games"
-                    ? "Games"
-                    : "Settings"}
-                </span>
-              </div>
+              <span className="pixel-font text-xs text-white mb-1">
+                {selectedIcon === "shop"
+                  ? "Tienda"
+                  : selectedIcon === "games"
+                  ? "Games"
+                  : "Settings"}
+              </span>
             )}
-            <div className="absolute bottom-2 left-2 right-2 flex justify-between z-20">
+            <div className="flex justify-between w-full">
               <div
                 className={`w-[25px] h-[25px] pixel-art cursor-pointer flex items-center justify-center ${
                   selectedIcon === "shop" ? "animate-pulse" : ""
@@ -676,7 +674,7 @@ export default function NoaTamagotchi() {
                 />
               </div>
             </div>
-          </>
+          </div>
         )}
 
         <AudioSettingsModal
