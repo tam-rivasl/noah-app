@@ -2,6 +2,14 @@
 
 import React, { useEffect, useRef } from "react";
 
+export type ShopItem = {
+  id: string;
+  name: string;
+  price: number;
+  category: string;
+  image?: string;
+};
+
 export type ShopModalProps = {
   visible: boolean;
   selectedIndex: number;
@@ -12,12 +20,33 @@ export type ShopModalProps = {
   error: string | null;
 };
 
-export const shopItems = [
+export const shopItems: ShopItem[] = [
   { id: "food", name: "🍗 Comida deliciosa", price: 10, category: "food" },
   { id: "plant", name: "🌱 Planta decorativa", price: 15, category: "toys" },
   { id: "teddy", name: "🧸 Peluche suave", price: 20, category: "toys" },
   { id: "bed", name: "🛏️ Cama nueva cómoda", price: 30, category: "themes" },
-] as const;
+  { id: "theme-asd", name: "Tema Asd", price: 25, category: "themes", image: "/images/back-grounds/asd.png" },
+  {
+    id: "theme-azul-con-patitas",
+    name: "Azul con patitas",
+    price: 25,
+    category: "themes",
+    image: "/images/back-grounds/azul-con-patitas.png",
+  },
+  {
+    id: "theme-azul-patitas",
+    name: "Azul patitas",
+    price: 25,
+    category: "themes",
+    image: "/images/back-grounds/azul-patitas.png",
+  },
+  { id: "theme-day", name: "Tema Día", price: 25, category: "themes", image: "/images/back-grounds/day.png" },
+  { id: "theme-game-boy", name: "Game Boy", price: 25, category: "themes", image: "/images/back-grounds/game-boy.png" },
+  { id: "theme-game-jump", name: "Game Jump", price: 25, category: "themes", image: "/images/back-grounds/game-jump.png" },
+  { id: "theme-night", name: "Tema Noche", price: 25, category: "themes", image: "/images/back-grounds/night.png" },
+  { id: "theme-tarde", name: "Tema Tarde", price: 25, category: "themes", image: "/images/back-grounds/tarde.png" },
+  { id: "theme-texture4", name: "Texture", price: 25, category: "themes", image: "/images/back-grounds/texture4.png" },
+];
 
 export default function ShopModal({
   visible,
@@ -76,11 +105,12 @@ export default function ShopModal({
                 <p className="text-xs text-blue-200">A = Sí, B = No</p>
               </div>
             ) : (
-              <div ref={listRef} className="overflow-y-auto flex flex-col gap-2 pb-2">
-                {(() => {
-                  let currentCategory: string | null = null;
-                  let index = -1;
-                  const elements: React.ReactNode[] = [];
+              <>
+                <div ref={listRef} className="overflow-y-auto flex flex-col gap-2 pb-2">
+                  {(() => {
+                    let currentCategory: string | null = null;
+                    let index = -1;
+                    const elements: React.ReactNode[] = [];
                   for (const item of visibleItems) {
                     index += 1;
                     if (item.category !== currentCategory && item.category !== "exit") {
@@ -120,7 +150,17 @@ export default function ShopModal({
                   }
                   return elements;
                 })()}
-              </div>
+                </div>
+                {selectedItem.category === "themes" && selectedItem.image && (
+                  <div className="flex justify-center mt-2">
+                    <img
+                      src={selectedItem.image}
+                      alt={selectedItem.name}
+                      className="w-20 h-20 object-cover border border-blue-400"
+                    />
+                  </div>
+                )}
+              </>
             )}
 
             <div className="mt-4 text-center flex-shrink-0 space-y-1">
