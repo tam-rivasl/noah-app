@@ -24,7 +24,6 @@ export type NoaState = {
 };
 
 type Inventory = {
-  food: number;
   plant: boolean;
   teddy: boolean;
 };
@@ -37,7 +36,6 @@ const initialState: NoaState = {
 };
 
 const initialInventory: Inventory = {
-  food: 0,
   plant: false,
   teddy: false,
 };
@@ -73,6 +71,7 @@ export default function NoaTamagotchi() {
   const [gamesVisible, setGamesVisible] = useState(false);
   const [audioIndex, setAudioIndex] = useState(0);
   const [shopIndex, setShopIndex] = useState(0);
+  const [shopCategory, setShopCategory] = useState<"food" | "toys" | "themes" | null>(null);
   const [tamagoShopIndex, setTamagoShopIndex] = useState(0);
   const [coinsSpent, setCoinsSpent] = useState(0);
   const [shopConfirm, setShopConfirm] = useState<string | null>(null);
@@ -262,7 +261,7 @@ export default function NoaTamagotchi() {
     setCoinsSpent(spent);
     localStorage.setItem("coinsSpent", String(spent));
     if (id === "food") {
-      setInventory((inv) => ({ ...inv, food: inv.food + 1 }));
+      feedNoa();
     } else if (id === "plant") {
       setInventory((inv) => ({ ...inv, plant: true }));
     } else if (id === "teddy") {
@@ -270,6 +269,10 @@ export default function NoaTamagotchi() {
     }
     setShopError(null);
     setShopConfirm(null);
+    setShopVisible(false);
+    setShopIndex(0);
+    setShopCategory(null);
+    setScreen("main");
   };
 
   const handleTamagoBuy = (id: string) => {
@@ -284,10 +287,13 @@ export default function NoaTamagotchi() {
     setCoinsSpent(spent);
     localStorage.setItem("coinsSpent", String(spent));
     if (id === "snack") {
-      setInventory((inv) => ({ ...inv, food: inv.food + 1 }));
+      feedNoa();
     }
     setTamagoShopError(null);
     setTamagoShopConfirm(null);
+    setTamagoShopVisible(false);
+    setTamagoShopIndex(0);
+    setScreen("main");
   };
 
   const playActionSound = () => {
@@ -316,13 +322,25 @@ export default function NoaTamagotchi() {
       playActionSound();
       if (shopConfirm) {
         handleBuy(shopConfirm);
-      } else if (shopIndex === shopItems.length) {
-        setShopVisible(false);
-        setShopIndex(0);
-        setShopError(null);
-        setScreen("main");
+      } else if (shopCategory === null) {
+        const categories = ["food", "toys", "themes"] as const;
+        if (shopIndex === categories.length) {
+          setShopVisible(false);
+          setShopIndex(0);
+          setShopError(null);
+          setScreen("main");
+        } else {
+          setShopCategory(categories[shopIndex]);
+          setShopIndex(0);
+        }
       } else {
-        setShopConfirm(shopItems[shopIndex].id);
+        const items = shopItems.filter((i) => i.category === shopCategory);
+        if (shopIndex === items.length) {
+          setShopCategory(null);
+          setShopIndex(0);
+        } else {
+          setShopConfirm(items[shopIndex].id);
+        }
       }
       return;
     }
@@ -355,19 +373,15 @@ export default function NoaTamagotchi() {
     }
 
     if (selectedIcon === "shop") {
-      setTamagoShopVisible(true);
-      setTamagoShopIndex(0);
+      setShopVisible(true);
+      setShopIndex(0);
+      setShopCategory(null);
       return;
     }
     if (selectedIcon === "games") {
       setGamesVisible(true);
       setSelectedGameIndex(0);
       return;
-    }
-    if (inventory.food > 0) {
-      playActionSound();
-      setInventory((inv) => ({ ...inv, food: inv.food - 1 }));
-      feedNoa();
     }
   };
 
@@ -409,6 +423,9 @@ export default function NoaTamagotchi() {
     if (shopVisible) {
       if (shopConfirm) {
         setShopConfirm(null);
+      } else if (shopCategory) {
+        setShopCategory(null);
+        setShopIndex(0);
       } else {
         setShopVisible(false);
         setShopIndex(0);
@@ -735,6 +752,7 @@ export default function NoaTamagotchi() {
         <ShopModal
           visible={shopVisible}
           selectedIndex={shopIndex}
+          category={shopCategory}
           money={money}
           confirming={shopConfirm}
           error={shopError}
@@ -777,7 +795,10 @@ export default function NoaTamagotchi() {
               else if (dir === "right")
                 setAudioIndex((i) => (i + 1) % (max + 1));
             } else if (shopVisible) {
-              const max = shopItems.length;
+              const categoriesCount = 3;
+              const max = shopCategory
+                ? shopItems.filter((i) => i.category === shopCategory).length
+                : categoriesCount;
               if (dir === "up")
                 setShopIndex((i) => Math.max(0, i - 1));
               else if (dir === "down")
