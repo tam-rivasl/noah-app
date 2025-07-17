@@ -123,14 +123,7 @@ export default function ShopModal({
               </div>
             )}
 
-            <div className="mt-4 text-center flex-shrink-0 space-y-1">
-              {confirming ? null : (
-                <p className="text-xs text-blue-200">
-                  {selectedItem.id === "exit" ? "A = Salir" : "A = Comprar"}
-                </p>
-              )}
-              <p className="text-xs text-blue-200">B = Volver</p>
-          </div>
+            {/* Navigation instructions removed */}
         </div>
       </div>
         </div>
