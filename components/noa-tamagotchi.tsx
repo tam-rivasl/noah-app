@@ -85,6 +85,11 @@ export default function NoaTamagotchi() {
   const [actionSoundEnabled, setActionSoundEnabled] = useState(true);
 
   useEffect(() => {
+    const bg = localStorage.getItem("backgroundImage");
+    if (bg) setBackgroundImage(bg);
+  }, []);
+
+  useEffect(() => {
     const stored = localStorage.getItem("coinsSpent");
     if (stored) setCoinsSpent(parseInt(stored, 10));
     const inv = localStorage.getItem("inventory");
@@ -162,6 +167,11 @@ export default function NoaTamagotchi() {
 
   // 5) Fondo día/tarde/noche y forzar noche si duerme
   useEffect(() => {
+    const storedBg = localStorage.getItem("backgroundImage");
+    if (storedBg) {
+      setBackgroundImage(storedBg);
+      return;
+    }
     if (isSleeping) {
       setBackgroundImage("/images/back-grounds/night.png");
       return;
@@ -267,6 +277,9 @@ export default function NoaTamagotchi() {
       setInventory((inv) => ({ ...inv, plant: true }));
     } else if (id === "teddy") {
       setInventory((inv) => ({ ...inv, teddy: true }));
+    } else if (item.category === "themes" && item.image) {
+      setBackgroundImage(item.image);
+      localStorage.setItem("backgroundImage", item.image);
     }
     setShopError(null);
     setShopConfirm(null);
