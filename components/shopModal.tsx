@@ -13,11 +13,11 @@ export type ShopModalProps = {
 };
 
 export const shopItems = [
-  { id: "food", name: "🍗 Comida deliciosa", price: 10 },
-  { id: "plant", name: "🌱 Planta decorativa", price: 15 },
-  { id: "teddy", name: "🧸 Peluche suave", price: 20 },
-  { id: "bed", name: "🛏️ Cama nueva cómoda", price: 30 },
-];
+  { id: "food", name: "🍗 Comida deliciosa", price: 10, category: "food" },
+  { id: "plant", name: "🌱 Planta decorativa", price: 15, category: "toys" },
+  { id: "teddy", name: "🧸 Peluche suave", price: 20, category: "toys" },
+  { id: "bed", name: "🛏️ Cama nueva cómoda", price: 30, category: "themes" },
+] as const;
 
 export default function ShopModal({
   visible,
@@ -30,18 +30,23 @@ export default function ShopModal({
 
   const visibleItems = [
     ...shopItems,
-    { id: "exit", name: "✖️ Salir de la tienda", price: 0 },
+    { id: "exit", name: "✖️ Salir de la tienda", price: 0, category: "exit" },
   ];
+  const categoryLabels: Record<string, string> = {
+    food: "Food",
+    toys: "Toys",
+    themes: "Themes",
+  };
   const selectedItem = visibleItems[selectedIndex];
 
   const listRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const itemEl = listRef.current?.children[selectedIndex] as
-      | HTMLElement
-      | undefined;
+    const itemEl = listRef.current?.querySelector(
+      `[data-index="${selectedIndex}"]`,
+    ) as HTMLElement | null;
     if (itemEl) {
-      itemEl.scrollIntoView({ inline: "center", behavior: "smooth" });
+      itemEl.scrollIntoView({ block: "nearest", behavior: "smooth" });
     }
   }, [selectedIndex]);
 
@@ -71,23 +76,50 @@ export default function ShopModal({
                 <p className="text-xs text-blue-200">A = Sí, B = No</p>
               </div>
             ) : (
-              <div ref={listRef} className="overflow-x-auto flex gap-2 pb-2">
-                {visibleItems.map((item, idx) => (
-                  <div
-                    key={item.id}
-                    className={`min-w-[90px] flex-shrink-0 flex flex-col items-center px-2 py-2 bg-[#113] border border-blue-400 rounded transition-all duration-150 text-center ${
-                      selectedIndex === idx
-                        ? "ring-2 ring-yellow-300 bg-blue-800 animate-pixel-fill"
-                        : ""
-                    }`}
-                  >
-                    <span className="text-xs mb-1">{item.name}</span>
-                    {item.id !== "exit" && (
-                      <span className="text-[10px]">{item.price} 🪙</span>
-                    )}
-                  </div>
-                ))}
-                {error && <p className="text-red-400 text-xs ml-2">{error}</p>}
+              <div ref={listRef} className="overflow-y-auto flex flex-col gap-2 pb-2">
+                {(() => {
+                  let currentCategory: string | null = null;
+                  let index = -1;
+                  const elements: React.ReactNode[] = [];
+                  for (const item of visibleItems) {
+                    index += 1;
+                    if (item.category !== currentCategory && item.category !== "exit") {
+                      currentCategory = item.category;
+                      elements.push(
+                        <h3
+                          key={"header-" + currentCategory}
+                          className="text-left text-sm font-bold mt-1 mb-1 uppercase"
+                        >
+                          {categoryLabels[currentCategory] || currentCategory}
+                        </h3>,
+                      );
+                    }
+                    elements.push(
+                      <div
+                        key={item.id}
+                        data-index={index}
+                        className={`min-w-[90px] flex-shrink-0 flex flex-col items-center px-2 py-2 bg-[#113] border border-blue-400 rounded transition-all duration-150 text-center ${
+                          selectedIndex === index
+                            ? "ring-2 ring-yellow-300 bg-blue-800 animate-pixel-fill"
+                            : ""
+                        }`}
+                      >
+                        <span className="text-xs mb-1">{item.name}</span>
+                        {item.id !== "exit" && (
+                          <span className="text-[10px]">{item.price} 🪙</span>
+                        )}
+                      </div>,
+                    );
+                  }
+                  if (error) {
+                    elements.push(
+                      <p key="error" className="text-red-400 text-xs ml-2">
+                        {error}
+                      </p>,
+                    );
+                  }
+                  return elements;
+                })()}
               </div>
             )}
 
