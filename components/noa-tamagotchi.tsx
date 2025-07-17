@@ -630,7 +630,9 @@ export default function NoaTamagotchi() {
             <div className="flex justify-between w-full">
               <div
                 className={`w-[25px] h-[25px] pixel-art cursor-pointer flex items-center justify-center ${
-                  selectedIcon === "shop" ? "animate-pulse" : ""
+                  selectedIcon === "shop"
+                    ? "animate-pulse ring-2 ring-yellow-300 animate-pixel-fill"
+                    : ""
                 }`}
                 onClick={() => {
                   setTamagoShopIndex(0);
@@ -645,7 +647,9 @@ export default function NoaTamagotchi() {
               </div>
               <div
                 className={`w-[25px] h-[25px] pixel-art cursor-pointer flex items-center justify-center ${
-                  selectedIcon === "games" ? " animate-pulse" : ""
+                  selectedIcon === "games"
+                    ? "animate-pulse ring-2 ring-yellow-300 animate-pixel-fill"
+                    : ""
                 }`}
                 onClick={() => {
                   setGamesVisible(true);
@@ -660,7 +664,9 @@ export default function NoaTamagotchi() {
               </div>
               <div
                 className={`w-[25px] h-[25px] pixel-art cursor-pointer flex items-center justify-center ${
-                  selectedIcon === "settings" ? " animate-pulse" : ""
+                  selectedIcon === "settings"
+                    ? "animate-pulse ring-2 ring-yellow-300 animate-pixel-fill"
+                    : ""
                 }`}
                 onClick={() => {
                   setAudioIndex(0);
