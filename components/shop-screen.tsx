@@ -19,29 +19,29 @@ export const shopItems = [
     id: "food",
     name: "Comida deliciosa",
     price: 5,
-    image: "/images/shop/food.png",
+    image: "/images/shop-items/food.png",
     category: "food",
   },
   {
     id: "plant",
     name: "Planta decorativa",
     price: 15,
-    image: "/images/shop/plant.png",
+    image: "/images/shop-items/planta.png",
     category: "toys",
   },
   {
-    id: "teddy",
+    id: "dragon",
     name: "Peluche suave",
     price: 20,
-    image: "/images/shop/teddy.png",
+    image: "/images/shop-items/dragon.png",
     category: "toys",
   },
   {
-    id: "bed",
-    name: "Cama nueva cómoda",
+    id: "house",
+    name: "Casa nueva cómoda",
     price: 40,
-    image: "/images/shop/bed.png",
-    category: "themes",
+    image: "/images/shop-items/house.png",
+    category: "toys",
   },
 ] as const;
 
@@ -145,21 +145,6 @@ export default function ShopScreen({
               {error && <p className="text-red-400 text-xs ml-2">{error}</p>}
             </div>
           )}
-
-          <div className="mt-4 text-center flex-shrink-0 space-y-1">
-            {confirming ? null : (
-              <p className="text-xs">
-                {selectedItem.id === "exit"
-                  ? "A = Salir"
-                  : selectedItem.id === "back"
-                  ? "A = Volver"
-                  : category
-                  ? "A = Comprar"
-                  : "A = Seleccionar"}
-              </p>
-            )}
-            <p className="text-xs">B = Volver</p>
-          </div>
         </div>
       </div>
     </div>
