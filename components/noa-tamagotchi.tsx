@@ -89,6 +89,8 @@ export default function NoaTamagotchi() {
     if (stored) setCoinsSpent(parseInt(stored, 10));
     const inv = localStorage.getItem("inventory");
     if (inv) setInventory(JSON.parse(inv));
+    const bg = localStorage.getItem("backgroundImage");
+    if (bg) setBackgroundImage(bg);
   }, []);
 
   const getTotalScore = useCallback(() => {
@@ -137,6 +139,10 @@ export default function NoaTamagotchi() {
   useEffect(() => {
     localStorage.setItem("inventory", JSON.stringify(inventory));
   }, [inventory]);
+
+  useEffect(() => {
+    localStorage.setItem("backgroundImage", backgroundImage);
+  }, [backgroundImage]);
 
   // 3) Decaimiento de stats cada minuto
   useEffect(() => {
@@ -267,6 +273,10 @@ export default function NoaTamagotchi() {
       setInventory((inv) => ({ ...inv, plant: true }));
     } else if (id === "teddy") {
       setInventory((inv) => ({ ...inv, teddy: true }));
+    } else if (id === "bed") {
+      const newBg = "/images/back-grounds/azul-patitas.png";
+      setBackgroundImage(newBg);
+      localStorage.setItem("backgroundImage", newBg);
     }
     setShopError(null);
     setShopConfirm(null);
