@@ -7,6 +7,8 @@ interface MiniGameCatchProps {
   onExit: () => void;
   moveCommand: "left" | "right" | "up" | "down" | null;
   startCommand: boolean;
+  /** Invocado al terminar la partida con la puntuación obtenida */
+  onGameEnd?: (score: number, newRecord: boolean) => void;
 }
 
 interface Obstacle {
@@ -40,7 +42,16 @@ const JUMP_SPRITES = [
   "/images/spreeds/jumping/noa-saltando-moviendo-la-cola.png",
 ];
 
-export default function MiniGameCatch({ onExit, moveCommand, startCommand }: MiniGameCatchProps) {
+// Texto de instrucciones mostrado antes de iniciar el juego
+const instructions = [
+  "– Usa el D-Pad para mover a Noa a la izquierda o derecha.",
+  "– Presiona ▲ para saltar sobre las pelotas.",
+  "– Recoge huesos para obtener un buff aleatorio.",
+  "– Evita las pelotas hasta que termine el juego.",
+  "– ¡Buena suerte!",
+];
+
+export default function MiniGameCatch({ onExit, moveCommand, startCommand, onGameEnd }: MiniGameCatchProps) {
   // -------------- Estados de lógica del juego --------------
   const [started, setStarted] = useState(false);
   const [noaX, setNoaX] = useState(50);
@@ -123,10 +134,13 @@ export default function MiniGameCatch({ onExit, moveCommand, startCommand }: Min
 
   // -------------- Iniciar juego con el botón Start --------------
   useEffect(() => {
-    if (!started && currentLine >= instructions.length && startCommand) {
+    // Permite iniciar el juego en cualquier momento, saltando las
+    // instrucciones si aún se están mostrando
+    if (!started && startCommand) {
+      setCurrentLine(instructions.length);
       setStarted(true);
     }
-  }, [startCommand, started]);
+  }, [startCommand, started, instructions.length]);
 
   // -------------- Manejo de D-Pad --------------
   useEffect(() => {
@@ -284,17 +298,14 @@ export default function MiniGameCatch({ onExit, moveCommand, startCommand }: Min
     const updated = [...records, newRecord].sort((a, b) => b.score - a.score).slice(0, 10);
     setRecords(updated);
     localStorage.setItem("catchRecords", JSON.stringify(updated));
-  }, [gameOver]);
+
+    const prevBest = records[0]?.score ?? 0;
+    const isNew = score > prevBest;
+    onGameEnd?.(score, isNew);
+  }, [gameOver, records, score, onGameEnd]);
   // ----------------------------------------------------
   //  Efecto “typewriter” para las instrucciones:
   // ----------------------------------------------------
-  const instructions = [
-    "– Usa el D-Pad para mover a Noa a la izquierda o derecha.",
-    "– Presiona ▲ para saltar sobre las pelotas.",
-    "– Recoge huesos para obtener un buff aleatorio.",
-    "– Evita las pelotas hasta que termine el juego.",
-    "– ¡Buena suerte!",
-  ];
   const [currentLine, setCurrentLine] = useState(0);
   const [currentChar, setCurrentChar] = useState(0);
   const [revealedLines, setRevealedLines] = useState<string[]>([]);

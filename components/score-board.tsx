@@ -38,7 +38,7 @@ export default function ScoreBoard({ records, onClose, onReset }: ScoreBoardProp
               <span className="flex items-center whitespace-nowrap">
                 {idx + 1}°
                 {idx === 0 && <span className="ml-1">👑</span>}
-                {(idx === 1 || idx === 2) && idx !== 0 && (
+                {[1, 2].includes(idx) && idx !== 0 && (
                   <span className="ml-1">⭐</span>
                 )}
               </span>

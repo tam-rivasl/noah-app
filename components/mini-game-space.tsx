@@ -8,6 +8,8 @@ interface MiniGameSpaceProps {
   onExit: () => void;
   moveCommand: "left" | "right" | "up" | "down" | null;
   startCommand: boolean;
+  /** Puntaje final y si es nuevo record */
+  onGameEnd?: (score: number, newRecord: boolean) => void;
 }
 
 interface Meteor {
@@ -31,7 +33,7 @@ const MAX_SPEED = 10;                    // px por tick
 const SPEED_INCREASE_INTERVAL = 10000;   // cada 10 s
 const SPAWN_DECREASE_AMOUNT = 150;       // cada 10 s se reduce 150 ms
 
-export default function MiniGameSpace({ onExit, moveCommand, startCommand }: MiniGameSpaceProps) {
+export default function MiniGameSpace({ onExit, moveCommand, startCommand, onGameEnd }: MiniGameSpaceProps) {
   const [started, setStarted] = useState(false);
   const [meteors, setMeteors] = useState<Meteor[]>([]);
   // Iniciamos a Noa centrado horizontalmente
@@ -74,7 +76,11 @@ export default function MiniGameSpace({ onExit, moveCommand, startCommand }: Min
     const updated = [...records, newRecord].sort((a, b) => b.score - a.score).slice(0, 10);
     setRecords(updated);
     localStorage.setItem("spaceRecords", JSON.stringify(updated));
-  }, [gameOver]);
+
+    const prevBest = records[0]?.score ?? 0;
+    const isNew = newRecord.score > prevBest;
+    onGameEnd?.(newRecord.score, isNew);
+  }, [gameOver, elapsed, records, onGameEnd]);
 
   // ——— Instrucciones para “typewriter” ———
   const instructions = [
@@ -127,10 +133,13 @@ export default function MiniGameSpace({ onExit, moveCommand, startCommand }: Min
 
   // ——— Iniciar juego con el botón Start ———
   useEffect(() => {
-    if (!started && currentLine >= instructions.length && startCommand) {
+    // Si el jugador presiona Start antes de finalizar las instrucciones
+    // iniciamos de inmediato saltándolas por completo
+    if (!started && startCommand) {
+      setCurrentLine(instructions.length);
       handleStart();
     }
-  }, [startCommand, started, currentLine, instructions.length, handleStart]);
+  }, [startCommand, started, handleStart, instructions.length]);
 
   // ——— Listener de teclado: B sale si GameOver ———
   useEffect(() => {
