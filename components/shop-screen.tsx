@@ -19,21 +19,21 @@ export const shopItems = [
     id: "food",
     name: "Comida deliciosa",
     price: 5,
-    image: "/images/shop-items/food.png",
+    image: "/images/shop-items/food/orange-juice.png",
     category: "food",
   },
   {
     id: "plant",
     name: "Planta decorativa",
     price: 15,
-    image: "/images/shop-items/planta.png",
+    image: "/images/shop-items/decoration/plantita.png",
     category: "toys",
   },
   {
     id: "dragon",
     name: "Peluche suave",
     price: 20,
-    image: "/images/shop-items/dragon.png",
+    image: "/images/shop-items/toys/dragoncito.png",
     category: "toys",
   },
   {
@@ -41,6 +41,27 @@ export const shopItems = [
     name: "Casa nueva cómoda",
     price: 40,
     image: "/images/shop-items/house.png",
+    category: "toys",
+  },
+  {
+    id: "toy",
+    name: "Peluche cute",
+    price: 40,
+    image: "/images/shop-items/toys/peluche_cute.png",
+    category: "toys",
+  },
+  {
+    id: "toy",
+    name: "Peluche cute",
+    price: 40,
+    image: "/images/shop-items/toys/majimbuu.png",
+    category: "toys",
+  },
+  {
+    id: "toy",
+    name: "Peluche cute",
+    price: 40,
+    image: "/images/shop-items/toys/cotito.png",
     category: "toys",
   },
 ] as const;
@@ -79,9 +100,6 @@ export default function ShopScreen({
         })),
         { id: "exit", name: "✖️ Salir de la tienda", price: 0, category: "exit" },
       ];
-
-  const selectedItem = visibleItems[selectedIndex];
-
   const listRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -101,7 +119,7 @@ export default function ShopScreen({
             🛍️ Tienda Pixel
           </h2>
           <div className="text-center text-xs bg-blue-900 py-1 px-2 rounded mb-1">
-            💰 Dinero disponible: <strong>{money}</strong> 🪙
+            💰 Dinero disponible: <strong>{money}</strong>
           </div>
         </div>
 
