@@ -231,7 +231,7 @@ export default function MiniGameSpace({ onExit, moveCommand, startCommand, onGam
       )}
       {gameOver && (
         viewingRecords ? (
-          <ScoreBoard onClose={onExit} />
+          <ScoreBoard onClose={onExit} gameType="space" embedded />
         ) : (
           <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center text-white pixel-font">
             <Image src="/images/space-game/explocion.png" alt="Boom" width={48} height={48} className="pixel-art mb-2" />
