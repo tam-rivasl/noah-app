@@ -52,7 +52,6 @@ export default function MiniGameSpace({ onExit, moveCommand, startCommand, onGam
           game_type: "space",
           date: new Date().toLocaleDateString("es-ES"),
           time: duration,
-          created_at: new Date().toISOString(),
         },
       ]);
       if (error) throw error;
@@ -67,7 +66,7 @@ export default function MiniGameSpace({ onExit, moveCommand, startCommand, onGam
     const elapsedMs = elapsed;
     const m = Math.floor(elapsedMs / 60000);
     const s = Math.floor((elapsedMs % 60000) / 1000);
-    const duration = `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+    const duration = `00:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
     const score = Math.floor(elapsedMs / 1000);
     saveSpaceGameScore(score, duration);
     onGameEnd?.(score, true);
