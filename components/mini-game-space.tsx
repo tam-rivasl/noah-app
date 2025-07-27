@@ -43,12 +43,14 @@ export default function MiniGameSpace({ onExit, moveCommand, startCommand, onGam
   const spawnIntervalRef = useRef(INITIAL_SPAWN_INTERVAL);
   const spawnTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const saveSpaceGameScore = async (score: number) => {
+  const saveSpaceGameScore = async (score: number, duration: string) => {
     try {
       const { data, error } = await supabase.from("game_scores").insert([
         {
           score: score,
           game_type: "space",
+          date: new Date().toLocaleDateString("es-ES"),
+          time: duration,
           created_at: new Date().toISOString(),
         },
       ]);
@@ -66,7 +68,7 @@ export default function MiniGameSpace({ onExit, moveCommand, startCommand, onGam
     const s = Math.floor((elapsedMs % 60000) / 1000);
     const duration = `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
     const score = Math.floor(elapsedMs / 1000);
-    saveSpaceGameScore(score);
+    saveSpaceGameScore(score, duration);
     onGameEnd?.(score, true);
   }, [gameOver, elapsed, onGameEnd]);
 
@@ -229,7 +231,7 @@ export default function MiniGameSpace({ onExit, moveCommand, startCommand, onGam
       )}
       {gameOver && (
         viewingRecords ? (
-          <ScoreBoard onClose={onExit} />
+          <ScoreBoard onClose={onExit} gameType="space" embedded />
         ) : (
           <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center text-white pixel-font">
             <Image src="/images/space-game/explocion.png" alt="Boom" width={48} height={48} className="pixel-art mb-2" />

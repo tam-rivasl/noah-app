@@ -324,7 +324,7 @@ export default function MiniGameCatch({ onExit, moveCommand, startCommand, onGam
 
       {gameOver && (
         viewingRecords ? (
-          <ScoreBoard gameType="catch" onClose={onExit} />
+          <ScoreBoard gameType="catch" onClose={onExit} embedded />
         ) : (
           <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center text-white pixel-font">
             <img src="/images/noa-llorando.png" alt="Noa triste" className="w-[62px] h-[62px] mb-1" />
