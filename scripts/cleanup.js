@@ -14,8 +14,14 @@ const supabase = createClient(supabaseUrl, supabaseKey, {
 
 function timeToSec(t) {
   if (!t) return 0;
-  const [m, s] = t.split(':').map(Number);
-  return (m || 0) * 60 + (s || 0);
+  const parts = t.split(':').map(Number);
+  let h = 0, m = 0, s = 0;
+  if (parts.length === 3) {
+    [h, m, s] = parts;
+  } else if (parts.length === 2) {
+    [m, s] = parts;
+  }
+  return h * 3600 + m * 60 + s;
 }
 
 async function cleanupGameScores() {

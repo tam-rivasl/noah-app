@@ -225,7 +225,7 @@ export default function MiniGameCatch({ onExit, moveCommand, startCommand, onGam
       const elapsedMs = Date.now() - startTimeRef.current;
       const m = Math.floor(elapsedMs / 60000);
       const s = Math.floor((elapsedMs % 60000) / 1000);
-      const duration = `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+      const duration = `00:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 
       await supabase.from("game_scores").insert([
         {
@@ -233,7 +233,6 @@ export default function MiniGameCatch({ onExit, moveCommand, startCommand, onGam
           game_type: "catch",
           date: new Date().toLocaleDateString("es-ES"),
           time: duration,
-          created_at: new Date().toISOString(),
         },
       ]);
 
