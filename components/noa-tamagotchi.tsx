@@ -14,6 +14,7 @@ import MiniGameSpace from "./mini-game-space";
 import AudioSettingsModal from "./AudioSettingsModal";
 import ShopScreen, { shopItems } from "./shop-screen";
 import GamesModal from "./games-modal";
+import { supabase } from "@/lib/supabase";
 
 export type NoaState = {
   hunger: number;
@@ -86,6 +87,29 @@ export default function NoaTamagotchi() {
     if (inv) setInventory(JSON.parse(inv));
   }, []);
 
+  // Load latest stats from Supabase
+  useEffect(() => {
+    const loadStats = async () => {
+      const { data } = await supabase
+        .from("noa_stats")
+        .select("*")
+        .order("updated_at", { ascending: false })
+        .limit(1);
+      if (data && data.length > 0) {
+        const latest = data[0];
+        setNoaState({
+          hunger: latest.hunger,
+          happiness: latest.happiness,
+          energy: latest.energy,
+          lastUpdated: Date.now(),
+        });
+        setCoinsEarned(latest.coins_earned ?? 0);
+        setCoinsSpent(latest.coins_spent ?? 0);
+      }
+    };
+    loadStats();
+  }, []);
+
 
   const money = coinsEarned - coinsSpent;
 
@@ -113,11 +137,31 @@ export default function NoaTamagotchi() {
       "noaState",
       JSON.stringify({ ...noaState, lastUpdated: Date.now() }),
     );
-  }, [noaState]);
+    const saveStats = async () => {
+      await supabase.from("noa_stats").insert([
+        {
+          hunger: noaState.hunger,
+          happiness: noaState.happiness,
+          energy: noaState.energy,
+          coins_earned: coinsEarned,
+          coins_spent: coinsSpent,
+        },
+      ]);
+    };
+    saveStats();
+  }, [noaState, coinsEarned, coinsSpent]);
 
   useEffect(() => {
     localStorage.setItem("inventory", JSON.stringify(inventory));
   }, [inventory]);
+
+  useEffect(() => {
+    localStorage.setItem("coinsSpent", String(coinsSpent));
+  }, [coinsSpent]);
+
+  useEffect(() => {
+    localStorage.setItem("coinsEarned", String(coinsEarned));
+  }, [coinsEarned]);
 
   // 3) Decaimiento de stats cada minuto
   useEffect(() => {
