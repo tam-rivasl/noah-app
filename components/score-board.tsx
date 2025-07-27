@@ -29,7 +29,7 @@ export default function ScoreBoard({ onClose, gameType, onReset }: ScoreBoardPro
         query = query.eq("game_type", gameType);
       }
 
-      const { data, error } = await query.order("score", { ascending: false }).limit(10);
+      const { data, error } = await query.order("time", { ascending: false }).limit(10);
 
       if (error) {
         console.error("Error fetching scores:", error.message);
@@ -38,8 +38,8 @@ export default function ScoreBoard({ onClose, gameType, onReset }: ScoreBoardPro
 
       const formatted: RecordEntry[] = data.map((item) => ({
         id: item.id,
-        date: new Date(item.created_at).toLocaleDateString("es-ES"),
-        time: new Date(item.created_at).toLocaleTimeString("es-ES"),
+        date: item.date ?? new Date(item.created_at).toLocaleDateString("es-ES"),
+        time: item.time ?? new Date(item.created_at).toLocaleTimeString("es-ES"),
         score: item.score,
         gameType: item.game_type,
       }));
@@ -48,6 +48,19 @@ export default function ScoreBoard({ onClose, gameType, onReset }: ScoreBoardPro
     };
 
     fetchScores();
+
+    const channel = supabase
+      .channel("scores")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "game_scores" },
+        fetchScores,
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [gameType]);
 
   const handleReset = async () => {
