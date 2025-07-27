@@ -1,55 +1,97 @@
+/* Archivo corregido: NoaTamagotchi con Supabase */
 "use client";
 
-import { useEffect, useState } from "react";
-import Image from "next/image";
+import React, { useState, useEffect, useCallback } from "react";
+import { supabase } from "@/lib/supabase";
 
-export default function NoaEating() {
-  const [frameIndex, setFrameIndex] = useState(0);
-  const [emote, setEmote] = useState<string | null>(null);
+import StatusBars from "./status-bars";
+import ActionButtons from "./action-buttons";
+import NoaWalking from "./noa-walking";
+import NoaEating from "./noa-eating";
+import NoaSleeping from "./noa-sleeping";
+import { NoaPetting } from "./noa-petting";
+import MiniGameCatch from "./mini-game-catch";
+import MiniGameSpace from "./mini-game-space";
+import AudioSettingsModal from "./AudioSettingsModal";
+import ShopScreen from "./shop-screen";
+import GamesModal from "./games-modal";
 
-  const frames = [
-    "/images/spreeds/eating/noa-comiendo-1.png",
-    "/images/spreeds/eating/noa-comiendo-2.png",
-  ];
+export type NoaState = {
+  hunger: number;
+  happiness: number;
+  energy: number;
+  lastUpdated: number;
+};
 
+export default function NoaTamagotchi() {
+  const [noaState, setNoaState] = useState<NoaState>({
+    hunger: 80,
+    happiness: 80,
+    energy: 80,
+    lastUpdated: Date.now()
+  });
+
+  const [coinsEarned, setCoinsEarned] = useState(0);
+  const [coinsSpent, setCoinsSpent] = useState(0);
+
+  // Cargar estado desde Supabase al iniciar
   useEffect(() => {
-    const interval = setInterval(() => {
-      setFrameIndex((prev) => (prev + 1) % frames.length);
-    }, 300);
-    return () => clearInterval(interval);
+    const loadStats = async () => {
+      const { data, error } = await supabase
+        .from("noa_stats")
+        .select("*")
+        .order("updated_at", { ascending: false })
+        .limit(1);
+
+      if (data && data.length > 0) {
+        const latest = data[0];
+        setNoaState({
+          hunger: latest.hunger,
+          happiness: latest.happiness,
+          energy: latest.energy,
+          lastUpdated: Date.now()
+        });
+        setCoinsEarned(latest.coins_earned ?? 0);
+        setCoinsSpent(latest.coins_spent ?? 0);
+      }
+    };
+
+    loadStats();
   }, []);
 
+  // Guardar estado en Supabase cada vez que cambia
   useEffect(() => {
-    const interval = setInterval(() => {
-      spawnEmote();
-    }, 800);
-    return () => clearInterval(interval);
-  }, []);
+    const saveStats = async () => {
+      await supabase.from("noa_stats").insert([
+        {
+          hunger: noaState.hunger,
+          happiness: noaState.happiness,
+          energy: noaState.energy,
+          coins_earned: coinsEarned,
+          coins_spent: coinsSpent
+        }
+      ]);
+    };
 
-  const spawnEmote = () => {
-    setEmote(Math.random() > 0.5 ? "🍖" : "🍗");
-    setTimeout(() => setEmote(null), 1000);
-  };
-
+    saveStats();
+  }, [noaState, coinsEarned, coinsSpent]);
   return (
-    <div className="relative w-[80px] h-[80px] flex justify-center items-center overflow-visible">
-      {/* Emote flotante */}
-      {emote && (
-        <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 text-2xl animate-float-up">
-          {emote}
-        </div>
-      )}
+    <div>
+<StatusBars noaState={noaState} />
+<ActionButtons
+        onFeed={() => { }}
+        onPet={() => { }}
+        onSleep={() => { }}
+        onReset={() => { }}
+        onStart={() => { }}
+        onMove={(dir) => { }}
+        onBack={() => { }}
+        isSleeping={false}
+        isStarting={false}
+        inMenu={false}
+        onStartGame={() => { }}
+      />
 
-      {/* Noa comiendo */}
-      <div className="w-[80px] h-[80px] relative">
-        <Image
-          src={frames[frameIndex]}
-          alt="Noa comiendo"
-          width={70}
-          height={70}
-          className="pixel-art"
-        />
-      </div>
     </div>
   );
 }

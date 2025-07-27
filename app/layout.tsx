@@ -1,13 +1,15 @@
-import "./globals.css"
-import type { Metadata } from "next"
-import { Inter } from "next/font/google"
-const inter = Inter({ subsets: ["latin"] })
+// app/layout.tsx
+import "./globals.css";
+import type { Metadata } from "next";
+import { Inter } from "next/font/google";
+
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Noa Tamagotchi",
   description: "A virtual pet named Noa",
-    generator: 'v0.dev'
-}
+  generator: "v0.dev",
+};
 
 interface RootLayoutProps {
   children: React.ReactNode;
