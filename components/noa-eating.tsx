@@ -37,43 +37,57 @@ export default function NoaTamagotchi() {
   // Cargar estado desde Supabase al iniciar
   useEffect(() => {
     const loadStats = async () => {
-      const { data, error } = await supabase
-        .from("noa_stats")
-        .select("*")
-        .order("updated_at", { ascending: false })
-        .limit(1);
+      try {
+        console.log('[noa-eating.loadStats]');
+        const { data, error } = await supabase
+          .from("noa_stats")
+          .select("*")
+          .order("updated_at", { ascending: false })
+          .limit(1);
 
-      if (data && data.length > 0) {
-        const latest = data[0];
-        setNoaState({
-          hunger: latest.hunger,
-          happiness: latest.happiness,
-          energy: latest.energy,
-          lastUpdated: Date.now()
-        });
-        setCoinsEarned(latest.coins_earned ?? 0);
-        setCoinsSpent(latest.coins_spent ?? 0);
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+          const latest = data[0];
+          setNoaState({
+            hunger: latest.hunger,
+            happiness: latest.happiness,
+            energy: latest.energy,
+            lastUpdated: Date.now(),
+          });
+          setCoinsEarned(latest.coins_earned ?? 0);
+          setCoinsSpent(latest.coins_spent ?? 0);
+        }
+        console.log('[noa-eating.loadStats] done');
+      } catch (e) {
+        console.error('Error loading noa stats', e);
       }
     };
 
-    loadStats();
+    void loadStats();
   }, []);
 
   // Guardar estado en Supabase cada vez que cambia
   useEffect(() => {
     const saveStats = async () => {
-      await supabase.from("noa_stats").insert([
-        {
-          hunger: noaState.hunger,
-          happiness: noaState.happiness,
-          energy: noaState.energy,
-          coins_earned: coinsEarned,
-          coins_spent: coinsSpent
-        }
-      ]);
+      try {
+        console.log('[noa-eating.saveStats] saving');
+        await supabase.from("noa_stats").insert([
+          {
+            hunger: noaState.hunger,
+            happiness: noaState.happiness,
+            energy: noaState.energy,
+            coins_earned: coinsEarned,
+            coins_spent: coinsSpent,
+          },
+        ]);
+        console.log('[noa-eating.saveStats] done');
+      } catch (e) {
+        console.error('Error saving noa stats', e);
+      }
     };
 
-    saveStats();
+    void saveStats();
   }, [noaState, coinsEarned, coinsSpent]);
   return (
     <div>

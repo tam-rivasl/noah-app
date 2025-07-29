@@ -24,28 +24,33 @@ export default function ScoreBoard({ onClose, gameType, onReset, embedded = fals
 
   useEffect(() => {
     const fetchScores = async () => {
-      let query = supabase.from("game_scores").select("*");
+      try {
+        console.log("[fetchScores] request", { gameType });
+        let query = supabase.from("game_scores").select("*");
 
-      if (gameType) {
-        query = query.eq("game_type", gameType);
+        if (gameType) {
+          query = query.eq("game_type", gameType);
+        }
+
+        const { data, error } = await query
+          .order("time", { ascending: false })
+          .limit(10);
+
+        if (error) throw error;
+
+        const formatted: RecordEntry[] = (data || []).map((item) => ({
+          id: item.id,
+          date: item.date ?? new Date(item.created_at).toLocaleDateString("es-ES"),
+          time: item.time ?? new Date(item.created_at).toLocaleTimeString("es-ES"),
+          score: item.score,
+          gameType: item.game_type,
+        }));
+
+        setRecords(formatted);
+        console.log("[fetchScores] response", formatted);
+      } catch (e) {
+        console.error("Error fetching scores", e);
       }
-
-      const { data, error } = await query.order("time", { ascending: false }).limit(10);
-
-      if (error) {
-        console.error("Error fetching scores:", error.message);
-        return;
-      }
-
-      const formatted: RecordEntry[] = data.map((item) => ({
-        id: item.id,
-        date: item.date ?? new Date(item.created_at).toLocaleDateString("es-ES"),
-        time: item.time ?? new Date(item.created_at).toLocaleTimeString("es-ES"),
-        score: item.score,
-        gameType: item.game_type,
-      }));
-
-      setRecords(formatted);
     };
 
     fetchScores();
@@ -75,19 +80,22 @@ export default function ScoreBoard({ onClose, gameType, onReset, embedded = fals
       return;
     }
 
-    const query = gameType
-      ? supabase.from("game_scores").delete().eq("game_type", gameType)
-      : supabase.from("game_scores").delete().neq("id", "");
+    try {
+      console.log("[handleReset] request", { gameType });
+      const query = gameType
+        ? supabase.from("game_scores").delete().eq("game_type", gameType)
+        : supabase.from("game_scores").delete().neq("id", "");
 
-    const { error } = await query;
+      const { error } = await query;
 
-    if (error) {
-      console.error("Error deleting scores:", error.message);
-    } else {
+      if (error) throw error;
+
       setRecords([]);
       setConfirm(false);
-      console.log("Puntuaciones eliminadas.");
-      onReset?.(); // callback opcional
+      console.log("[handleReset] scores deleted");
+      onReset?.();
+    } catch (e) {
+      console.error("Error deleting scores", e);
     }
   };
 
