@@ -225,15 +225,14 @@ export default function MiniGameCatch({ onExit, moveCommand, startCommand, onGam
       const elapsedMs = Date.now() - startTimeRef.current;
       const m = Math.floor(elapsedMs / 60000);
       const s = Math.floor((elapsedMs % 60000) / 1000);
-      const duration = `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+      const duration = `00:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 
       await supabase.from("game_scores").insert([
         {
           score,
           game_type: "catch",
-          date: new Date().toLocaleDateString("es-ES"),
+          date: new Date().toISOString().slice(0, 10),
           time: duration,
-          created_at: new Date().toISOString(),
         },
       ]);
 
@@ -324,7 +323,7 @@ export default function MiniGameCatch({ onExit, moveCommand, startCommand, onGam
 
       {gameOver && (
         viewingRecords ? (
-          <ScoreBoard gameType="catch" onClose={onExit} />
+          <ScoreBoard gameType="catch" onClose={onExit} embedded />
         ) : (
           <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center text-white pixel-font">
             <img src="/images/noa-llorando.png" alt="Noa triste" className="w-[62px] h-[62px] mb-1" />

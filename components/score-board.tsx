@@ -15,9 +15,10 @@ interface ScoreBoardProps {
   onClose: () => void;
   gameType?: string; // ← filtro opcional por tipo de juego
   onReset?: () => void; // callback opcional para reset externo
+  embedded?: boolean; // si true se muestra dentro de la pantalla del juego
 }
 
-export default function ScoreBoard({ onClose, gameType, onReset }: ScoreBoardProps) {
+export default function ScoreBoard({ onClose, gameType, onReset, embedded = false }: ScoreBoardProps) {
   const [records, setRecords] = useState<RecordEntry[]>([]);
   const [confirm, setConfirm] = useState(false);
 
@@ -29,7 +30,7 @@ export default function ScoreBoard({ onClose, gameType, onReset }: ScoreBoardPro
         query = query.eq("game_type", gameType);
       }
 
-      const { data, error } = await query.order("score", { ascending: false }).limit(10);
+      const { data, error } = await query.order("time", { ascending: false }).limit(10);
 
       if (error) {
         console.error("Error fetching scores:", error.message);
@@ -38,8 +39,8 @@ export default function ScoreBoard({ onClose, gameType, onReset }: ScoreBoardPro
 
       const formatted: RecordEntry[] = data.map((item) => ({
         id: item.id,
-        date: new Date(item.created_at).toLocaleDateString("es-ES"),
-        time: new Date(item.created_at).toLocaleTimeString("es-ES"),
+        date: item.date ?? new Date(item.created_at).toISOString().slice(0, 10),
+        time: item.time ?? new Date(item.created_at).toLocaleTimeString("es-ES"),
         score: item.score,
         gameType: item.game_type,
       }));
@@ -48,6 +49,24 @@ export default function ScoreBoard({ onClose, gameType, onReset }: ScoreBoardPro
     };
 
     fetchScores();
+
+    let channel: any = null;
+    if (typeof (supabase as any).channel === "function") {
+      channel = supabase
+        .channel("scores")
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "game_scores" },
+          fetchScores,
+        )
+        .subscribe();
+    }
+
+    return () => {
+      if (channel) {
+        (supabase as any).removeChannel(channel);
+      }
+    };
   }, [gameType]);
 
   const handleReset = async () => {
@@ -73,7 +92,11 @@ export default function ScoreBoard({ onClose, gameType, onReset }: ScoreBoardPro
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div
+      className={
+        `${embedded ? "absolute" : "fixed"} inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50`
+      }
+    >
       <div className="bg-gray-800 text-white p-4 rounded-lg shadow-lg max-h-[80vh] overflow-y-auto w-[90%] max-w-md">
         <h2 className="text-xl font-bold mb-2">
           {gameType ? `Historial de "${gameType}"` : "Historial de puntuaciones"}
@@ -83,22 +106,29 @@ export default function ScoreBoard({ onClose, gameType, onReset }: ScoreBoardPro
           <p className="text-sm text-center text-gray-300">No hay puntuaciones registradas.</p>
         ) : (
           <>
-            <div className="grid grid-cols-5 gap-2 text-sm font-semibold mb-1 border-b border-gray-600 pb-1">
+            <div
+              className={`grid gap-2 text-sm font-semibold mb-1 border-b border-gray-600 pb-1 ${
+                gameType ? "grid-cols-4" : "grid-cols-5"
+              }`}
+            >
               <span>Pos.</span>
-              <span>Juego</span>
+              {!gameType && <span>Juego</span>}
               <span>Fecha</span>
               <span>Hora</span>
               <span>Puntos</span>
             </div>
             {records.map((r, idx) => (
-              <div key={r.id} className="grid grid-cols-5 gap-2 text-sm items-center">
+              <div
+                key={r.id}
+                className={`grid gap-2 text-sm items-center ${gameType ? "grid-cols-4" : "grid-cols-5"}`}
+              >
                 <span className="flex items-center">
                   {idx + 1}°
                   {idx === 0 && <span className="ml-1">👑</span>}
                   {idx === 1 && <span className="ml-1">🥈</span>}
                   {idx === 2 && <span className="ml-1">🥉</span>}
                 </span>
-                <span className="capitalize">{r.gameType}</span>
+                {!gameType && <span className="capitalize">{r.gameType}</span>}
                 <span>{r.date}</span>
                 <span>{r.time}</span>
                 <span>{r.score}</span>
