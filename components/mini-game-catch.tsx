@@ -222,31 +222,39 @@ export default function MiniGameCatch({ onExit, moveCommand, startCommand, onGam
   useEffect(() => {
     if (!gameOver) return;
     const saveRecord = async () => {
-      const elapsedMs = Date.now() - startTimeRef.current;
-      const m = Math.floor(elapsedMs / 60000);
-      const s = Math.floor((elapsedMs % 60000) / 1000);
-      const duration = `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+      try {
+        const elapsedMs = Date.now() - startTimeRef.current;
+        const m = Math.floor(elapsedMs / 60000);
+        const s = Math.floor((elapsedMs % 60000) / 1000);
+        const duration = `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 
-      await supabase.from("game_scores").insert([
-        {
-          score,
-          game_type: "catch",
-          date: new Date().toLocaleDateString("es-ES"),
-          time: duration,
-          created_at: new Date().toISOString(),
-        },
-      ]);
+        console.log("[catch.saveRecord] inserting score", score);
+        await supabase.from("game_scores").insert([
+          {
+            score,
+            game_type: "catch",
+            date: new Date().toLocaleDateString("es-ES"),
+            time: duration,
+            created_at: new Date().toISOString(),
+          },
+        ]);
 
-      const { data } = await supabase
-        .from("game_scores")
-        .select("score")
-        .eq("game_type", "catch")
-        .order("score", { ascending: false })
-        .limit(1);
+        const { data, error } = await supabase
+          .from("game_scores")
+          .select("score")
+          .eq("game_type", "catch")
+          .order("score", { ascending: false })
+          .limit(1);
 
-      const prevBest = data?.[0]?.score ?? 0;
-      const isNew = score > prevBest;
-      onGameEnd?.(score, isNew);
+        if (error) throw error;
+
+        const prevBest = data?.[0]?.score ?? 0;
+        const isNew = score > prevBest;
+        onGameEnd?.(score, isNew);
+        console.log("[catch.saveRecord] complete", { isNew });
+      } catch (e) {
+        console.error("Error saving catch record", e);
+      }
     };
 
     saveRecord();

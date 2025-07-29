@@ -78,13 +78,73 @@ export default function NoaTamagotchi() {
   const [bgmEnabled, setBgmEnabled] = useState(true);
   const [actionSoundEnabled, setActionSoundEnabled] = useState(true);
 
+  // Load persisted inventory and coins from Supabase on mount
   useEffect(() => {
-    const spent = localStorage.getItem("coinsSpent");
-    if (spent) setCoinsSpent(parseInt(spent, 10));
-    const earned = localStorage.getItem("coinsEarned");
-    if (earned) setCoinsEarned(parseInt(earned, 10));
-    const inv = localStorage.getItem("inventory");
-    if (inv) setInventory(JSON.parse(inv));
+    const loadLocalData = async () => {
+      try {
+        console.log("[loadLocalData] fetching last noa_stats record");
+        const { data, error } = await supabase
+          .from("noa_stats")
+          .select("coins_earned, coins_spent, inventory")
+          .order("updated_at", { ascending: false })
+          .limit(1);
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+          const latest = data[0];
+          setCoinsEarned(latest.coins_earned ?? 0);
+          setCoinsSpent(latest.coins_spent ?? 0);
+          if (latest.inventory) {
+            setInventory(latest.inventory);
+          }
+        }
+        console.log("[loadLocalData] done", data);
+      } catch (e) {
+        console.error("Error loading local data", e);
+      }
+    };
+
+    void loadLocalData();
+  }, []);
+
+  // Periodic cleanup of old stats and scores
+  useEffect(() => {
+    const cleanup = async () => {
+      try {
+        console.log('[cleanup] start');
+        // Keep latest 10 noa_stats
+        const { data: stats } = await supabase
+          .from('noa_stats')
+          .select('id')
+          .order('updated_at', { ascending: false });
+        const statIds = (stats || []).map((s: any) => s.id).slice(10);
+        if (statIds.length) {
+          await supabase.from('noa_stats').delete().in('id', statIds);
+        }
+
+        const { data: types } = await supabase
+          .from('game_scores')
+          .select('game_type');
+        const unique = Array.from(new Set((types || []).map((t: any) => t.game_type)));
+        for (const t of unique) {
+          const { data: scores } = await supabase
+            .from('game_scores')
+            .select('id,score')
+            .eq('game_type', t)
+            .order('score', { ascending: false });
+          const ids = (scores || []).map((s: any) => s.id).slice(10);
+          if (ids.length) {
+            await supabase.from('game_scores').delete().in('id', ids);
+          }
+        }
+        console.log('[cleanup] done');
+      } catch (e) {
+        console.error('Cleanup error', e);
+      }
+    };
+    cleanup();
+    const id = setInterval(cleanup, 30 * 60 * 1000);
+    return () => clearInterval(id);
   }, []);
 
   // Load latest stats from Supabase
@@ -114,54 +174,30 @@ export default function NoaTamagotchi() {
   const money = coinsEarned - coinsSpent;
 
   // —————————————————————————————————————————————————
-  // 1) Cargar estado guardado
+  // Guardar estado en Supabase cada vez que cambia
   useEffect(() => {
-    const saved = localStorage.getItem("noaState");
-    if (saved) {
-      const parsed = JSON.parse(saved) as NoaState;
-      const now = Date.now();
-      const minutes = (now - parsed.lastUpdated) / 60000;
-      const decay = Math.floor(minutes / 5);
-      if (decay > 0) {
-        parsed.hunger = Math.max(parsed.hunger - decay, 0);
-        parsed.happiness = Math.max(parsed.happiness - decay, 0);
-        parsed.energy = Math.max(parsed.energy - decay, 0);
-      }
-      setNoaState({ ...parsed, lastUpdated: now });
-    }
-  }, []);
-
-  // 2) Guardar estado al cambiar
-  useEffect(() => {
-    localStorage.setItem(
-      "noaState",
-      JSON.stringify({ ...noaState, lastUpdated: Date.now() }),
-    );
     const saveStats = async () => {
-      await supabase.from("noa_stats").insert([
-        {
-          hunger: noaState.hunger,
-          happiness: noaState.happiness,
-          energy: noaState.energy,
-          coins_earned: coinsEarned,
-          coins_spent: coinsSpent,
-        },
-      ]);
+      try {
+        console.log("[saveStats] saving", noaState, coinsEarned, coinsSpent);
+        await supabase.from("noa_stats").insert([
+          {
+            hunger: noaState.hunger,
+            happiness: noaState.happiness,
+            energy: noaState.energy,
+            coins_earned: coinsEarned,
+            coins_spent: coinsSpent,
+            inventory,
+          },
+        ]);
+        console.log("[saveStats] done");
+      } catch (e) {
+        console.error("Error saving stats", e);
+      }
     };
-    saveStats();
-  }, [noaState, coinsEarned, coinsSpent]);
 
-  useEffect(() => {
-    localStorage.setItem("inventory", JSON.stringify(inventory));
-  }, [inventory]);
+    void saveStats();
+  }, [noaState, coinsEarned, coinsSpent, inventory]);
 
-  useEffect(() => {
-    localStorage.setItem("coinsSpent", String(coinsSpent));
-  }, [coinsSpent]);
-
-  useEffect(() => {
-    localStorage.setItem("coinsEarned", String(coinsEarned));
-  }, [coinsEarned]);
 
   // 3) Decaimiento de stats cada minuto
   useEffect(() => {
@@ -285,7 +321,6 @@ export default function NoaTamagotchi() {
     }
     const spent = coinsSpent + item.price;
     setCoinsSpent(spent);
-    localStorage.setItem("coinsSpent", String(spent));
     if (id === "food") {
       feedNoa();
     } else if (id === "plant") {
@@ -306,7 +341,6 @@ export default function NoaTamagotchi() {
     const reward = 10 + (newRecord ? 5 : 0);
     const total = coinsEarned + reward;
     setCoinsEarned(total);
-    localStorage.setItem("coinsEarned", String(total));
   };
 
   const playActionSound = () => {
@@ -761,7 +795,6 @@ export default function NoaTamagotchi() {
             if (!isSleeping && !noaDead) setIsSleeping(true);
           }}
           onReset={() => {
-            localStorage.removeItem("noaState");
             setNoaState(initialState);
             setScreen("start");
             setIsSleeping(false);

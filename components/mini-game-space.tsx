@@ -45,7 +45,8 @@ export default function MiniGameSpace({ onExit, moveCommand, startCommand, onGam
 
   const saveSpaceGameScore = async (score: number, duration: string) => {
     try {
-      const { data, error } = await supabase.from("game_scores").insert([
+      console.log("[space.saveScore] inserting", { score, duration });
+      const { error } = await supabase.from("game_scores").insert([
         {
           score: score,
           game_type: "space",
@@ -55,9 +56,9 @@ export default function MiniGameSpace({ onExit, moveCommand, startCommand, onGam
         },
       ]);
       if (error) throw error;
-  
+      console.log("[space.saveScore] done");
     } catch (e) {
-      console.error("Error saving space game score:", e);
+      console.error("Error saving space game score", e);
     }
   };
 
