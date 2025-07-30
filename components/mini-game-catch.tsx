@@ -227,27 +227,30 @@ export default function MiniGameCatch({ onExit, moveCommand, startCommand, onGam
       const s = Math.floor((elapsedMs % 60000) / 1000);
       const duration = `00:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 
-      await supabase.from("game_scores").insert([
-        {
-          score,
-          game_type: "catch",
-          date: new Date().toLocaleDateString("es-ES"),
-          time: duration,
-        },
-      ]);
+      try {
+        await supabase.from("game_scores").insert([
+          {
+            score,
+            game_type: "catch",
+            date: new Date().toISOString().split("T")[0], // yyyy-mm-dd
+            time: duration, // formato HH:mm:ss idealmente
+          },
+        ]);
+      } catch (e) {
+        console.error("❌ Error al guardar puntuación:", e);
+      }
 
       const { data } = await supabase
-        .from("game_scores")
-        .select("score")
-        .eq("game_type", "catch")
-        .order("score", { ascending: false })
-        .limit(1);
+          .from("game_scores")
+          .select("score")
+          .eq("game_type", "catch")
+          .order("score", { ascending: false })
+          .limit(1);
 
       const prevBest = data?.[0]?.score ?? 0;
       const isNew = score > prevBest;
       onGameEnd?.(score, isNew);
     };
-
     saveRecord();
   }, [gameOver]);
 
@@ -323,7 +326,13 @@ export default function MiniGameCatch({ onExit, moveCommand, startCommand, onGam
 
       {gameOver && (
         viewingRecords ? (
-          <ScoreBoard gameType="catch" onClose={onExit} embedded />
+            <ScoreBoard
+                gameType="catch"
+                onClose={onExit}
+                embedded
+                moveCommand={moveCommand}
+                startCommand={startCommand}
+            />
         ) : (
           <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center text-white pixel-font">
             <img src="/images/noa-llorando.png" alt="Noa triste" className="w-[62px] h-[62px] mb-1" />
