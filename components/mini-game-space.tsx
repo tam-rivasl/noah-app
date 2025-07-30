@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import Image from "next/image";
 import ScoreBoard from "./score-board";
-import { supabase } from "@/lib/supabase"; // Cambiado de Firebase a Supabase
+import { supabase } from "@/lib/supabase";
 
 interface MiniGameSpaceProps {
   onExit: () => void;
@@ -30,48 +30,67 @@ const MAX_SPEED = 10;
 const SPEED_INCREASE_INTERVAL = 10000;
 const SPAWN_DECREASE_AMOUNT = 150;
 
-export default function MiniGameSpace({ onExit, moveCommand, startCommand, onGameEnd }: MiniGameSpaceProps) {
+export default function MiniGameSpace({
+                                        onExit,
+                                        moveCommand,
+                                        startCommand,
+                                        onGameEnd,
+                                      }: MiniGameSpaceProps) {
   const [started, setStarted] = useState(false);
   const [meteors, setMeteors] = useState<Meteor[]>([]);
   const [playerX, setPlayerX] = useState((CANVAS_WIDTH - PLAYER_WIDTH) / 2);
   const [gameOver, setGameOver] = useState(false);
-  const [elapsed, setElapsed] = useState(0);
   const [viewingRecords, setViewingRecords] = useState(false);
 
-  const startRef = useRef<number>(0);
+  const startRef = useRef<number>(0); // Referencia al inicio del juego
   const speedRef = useRef(INITIAL_SPEED);
   const spawnIntervalRef = useRef(INITIAL_SPAWN_INTERVAL);
   const spawnTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const saveSpaceGameScore = async (score: number, duration: string) => {
-    try {
-      console.log("[space.saveScore] inserting", { score, duration });
-      const { error } = await supabase.from("game_scores").insert([
-        {
-          score: score,
-          game_type: "space",
-          date: new Date().toLocaleDateString("es-ES"),
-          time: duration,
-        },
-      ]);
-      if (error) throw error;
-      console.log("[space.saveScore] done");
-    } catch (e) {
-      console.error("Error saving space game score", e);
-    }
-  };
-
-  useEffect(() => {
-    if (!gameOver) return;
-    const elapsedMs = elapsed;
+  // ✅ Guarda la puntuación en Supabase al finalizar el juego
+  const saveRecord = async (score: number) => {
+    const elapsedMs = Date.now() - startRef.current;
     const m = Math.floor(elapsedMs / 60000);
     const s = Math.floor((elapsedMs % 60000) / 1000);
     const duration = `00:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
-    const score = Math.floor(elapsedMs / 1000);
-    saveSpaceGameScore(score, duration);
-    onGameEnd?.(score, true);
-  }, [gameOver, elapsed, onGameEnd]);
 
+    try {
+      await supabase.from("game_scores").insert([
+        {
+          score,
+          game_type: "space",
+          date: new Date().toISOString().split("T")[0],
+          time: duration,
+        },
+      ]);
+    } catch (e) {
+      console.error("❌ Error al guardar puntuación de space:", e);
+    }
+
+    // Verifica si es nuevo récord
+    const { data } = await supabase
+        .from("game_scores")
+        .select("score")
+        .eq("game_type", "space")
+        .order("score", { ascending: false })
+        .limit(1);
+
+    const prevBest = data?.[0]?.score ?? 0;
+    const isNew = score > prevBest;
+    onGameEnd?.(score, isNew);
+  };
+
+  // Ejecuta cuando termina el juego
+  useEffect(() => {
+    if (!gameOver) return;
+
+    const elapsedMs = Date.now() - startRef.current;
+    const score = Math.floor(elapsedMs / 1000); // 1 punto por segundo
+
+    saveRecord(score);
+  }, [gameOver]);
+
+  // Instrucciones animadas
   const instructions = [
     "– Mueve a Noa con ← / →.",
     "– Presiona START para iniciar.",
@@ -108,7 +127,7 @@ export default function MiniGameSpace({ onExit, moveCommand, startCommand, onGam
 
   const handleStart = useCallback(() => {
     setStarted(true);
-    startRef.current = Date.now();
+    startRef.current = Date.now(); // Marca el inicio del juego
     speedRef.current = INITIAL_SPEED;
     spawnIntervalRef.current = INITIAL_SPAWN_INTERVAL;
   }, []);
@@ -118,7 +137,7 @@ export default function MiniGameSpace({ onExit, moveCommand, startCommand, onGam
       setCurrentLine(instructions.length);
       handleStart();
     }
-  }, [startCommand, started, handleStart, instructions.length]);
+  }, [startCommand, started, handleStart]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -138,20 +157,20 @@ export default function MiniGameSpace({ onExit, moveCommand, startCommand, onGam
     window.dispatchEvent(new Event("resetMove"));
   }, [moveCommand, started, gameOver]);
 
+  // Aumenta dificultad cada 10s
   useEffect(() => {
     if (!started) return;
-    const diffInterval = setInterval(() => {
+    const id = setInterval(() => {
       const now = Date.now();
       const total = now - startRef.current;
-      setElapsed(total);
       const factor = Math.floor(total / SPEED_INCREASE_INTERVAL);
-      speedRef.current = Math.min(INITIAL_SPEED + factor * 1, MAX_SPEED);
+      speedRef.current = Math.min(INITIAL_SPEED + factor, MAX_SPEED);
       spawnIntervalRef.current = Math.max(
-        INITIAL_SPAWN_INTERVAL - factor * SPAWN_DECREASE_AMOUNT,
-        MIN_SPAWN_INTERVAL
+          INITIAL_SPAWN_INTERVAL - factor * SPAWN_DECREASE_AMOUNT,
+          MIN_SPAWN_INTERVAL
       );
     }, 1000);
-    return () => clearInterval(diffInterval);
+    return () => clearInterval(id);
   }, [started]);
 
   const scheduleNextMeteor = useCallback(() => {
@@ -159,11 +178,15 @@ export default function MiniGameSpace({ onExit, moveCommand, startCommand, onGam
     spawnTimerRef.current = setTimeout(() => {
       const size = 24;
       const xPos = Math.random() * (CANVAS_WIDTH - size);
-      setMeteors((prev) => [...prev, { id: Date.now() + Math.random(), x: xPos, y: 0, size }]);
+      setMeteors((prev) => [
+        ...prev,
+        { id: Date.now() + Math.random(), x: xPos, y: 0, size },
+      ]);
       scheduleNextMeteor();
     }, spawnIntervalRef.current);
   }, [gameOver]);
 
+  // Loop principal del juego
   useEffect(() => {
     if (!started) return;
     scheduleNextMeteor();
@@ -206,43 +229,54 @@ export default function MiniGameSpace({ onExit, moveCommand, startCommand, onGam
 
   if (!started) {
     return (
-      <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center text-white pixel-font p-4" style={{ backdropFilter: "blur(2px)" }}>
-        <h2 className="text-sm font-bold mb-2">INSTRUCCIONES</h2>
-        <div className="space-y-1 text-[10px]">
-          {revealedLines.map((line, idx) => <p key={idx}>{line}</p>)}
+        <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center text-white pixel-font p-4" style={{ backdropFilter: "blur(2px)" }}>
+          <h2 className="text-sm font-bold mb-2">INSTRUCCIONES</h2>
+          <div className="space-y-1 text-[10px]">
+            {revealedLines.map((line, idx) => <p key={idx}>{line}</p>)}
+          </div>
+          {currentLine >= instructions.length && <p className="text-[8px] mt-3">Presiona START para comenzar</p>}
         </div>
-        {currentLine >= instructions.length && <p className="text-[8px] mt-3">Presiona START para comenzar</p>}
-      </div>
     );
   }
 
   return (
-    <div className="relative w-[300px] h-[220px] bg-cover bg-center overflow-hidden mx-auto" style={{ backgroundImage: "url(/images/space-game/background-mini-game-space.jpg)" }}>
-      <p className="absolute top-1 left-2 text-xs font-bold text-white shadow-md pixel-font">Puntaje: {Math.floor(elapsed / 1000)}</p>
-      {meteors.map((m) => (
-        <div key={m.id} className="absolute" style={{ left: `${m.x}px`, top: `${m.y}px`, width: `${m.size}px`, height: `${m.size}px` }}>
-          <Image src="/images/space-game/meteorito.png" alt="Meteorito" width={m.size} height={m.size} className="pixel-art" />
-        </div>
-      ))}
-      {!gameOver && (
-        <div className="absolute" style={{ left: `${playerX}px`, top: `${CANVAS_HEIGHT - PLAYER_HEIGHT - 10}px`, width: `${PLAYER_WIDTH}px`, height: `${PLAYER_HEIGHT}px` }}>
-          <Image src="/images/space-game/cotito-pj.png" alt="Cotito" width={PLAYER_WIDTH} height={PLAYER_HEIGHT} className="pixel-art" />
-        </div>
-      )}
-      {gameOver && (
-        viewingRecords ? (
-          <ScoreBoard onClose={onExit} gameType="space" embedded />
-        ) : (
-          <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center text-white pixel-font">
-            <Image src="/images/space-game/explocion.png" alt="Boom" width={48} height={48} className="pixel-art mb-2" />
-            <p className="text-[12px] font-bold mb-1">¡BOOM! Perdiste 🚀</p>
-            <button onClick={() => setViewingRecords(true)} className="bg-gray-700 hover:bg-gray-600 transition-transform duration-200 active:scale-95 text-[10px] px-2 py-1 rounded mb-2">
-              Ver historial
-            </button>
-            <p className="text-[10px] mb-2">Presiona B para salir</p>
-          </div>
-        )
-      )}
-    </div>
+      <div className="relative w-[300px] h-[220px] bg-cover bg-center overflow-hidden mx-auto" style={{ backgroundImage: "url(/images/space-game/background-mini-game-space.jpg)" }}>
+        <p className="absolute top-1 left-2 text-xs font-bold text-white shadow-md pixel-font">
+          Puntaje: {Math.floor((Date.now() - startRef.current) / 1000)}
+        </p>
+
+        {meteors.map((m) => (
+            <div key={m.id} className="absolute" style={{ left: `${m.x}px`, top: `${m.y}px`, width: `${m.size}px`, height: `${m.size}px` }}>
+              <Image src="/images/space-game/meteorito.png" alt="Meteorito" width={m.size} height={m.size} className="pixel-art" />
+            </div>
+        ))}
+
+        {!gameOver && (
+            <div className="absolute" style={{ left: `${playerX}px`, top: `${CANVAS_HEIGHT - PLAYER_HEIGHT - 10}px`, width: `${PLAYER_WIDTH}px`, height: `${PLAYER_HEIGHT}px` }}>
+              <Image src="/images/space-game/cotito-pj.png" alt="Cotito" width={PLAYER_WIDTH} height={PLAYER_HEIGHT} className="pixel-art" />
+            </div>
+        )}
+
+        {gameOver && (
+            viewingRecords ? (
+                <ScoreBoard
+                    gameType="catch"
+                    onClose={onExit}
+                    embedded
+                    moveCommand={moveCommand}
+                    startCommand={startCommand}
+                />
+            ) : (
+                <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center text-white pixel-font">
+                  <Image src="/images/space-game/explocion.png" alt="Boom" width={48} height={48} className="pixel-art mb-2" />
+                  <p className="text-[12px] font-bold mb-1">¡BOOM! Perdiste 🚀</p>
+                  <button onClick={() => setViewingRecords(true)} className="bg-gray-700 hover:bg-gray-600 transition-transform duration-200 active:scale-95 text-[10px] px-2 py-1 rounded mb-2">
+                    Ver historial
+                  </button>
+                  <p className="text-[10px] mb-2">Presiona B para salir</p>
+                </div>
+            )
+        )}
+      </div>
   );
 }

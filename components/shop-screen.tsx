@@ -1,170 +1,170 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
-/** Props para la pantalla de la tienda */
+import React, { useEffect, useRef, useState } from "react";
+import { supabase } from "@/lib/supabase"; // Ajusta si usas otra ruta
+
 export type ShopScreenProps = {
-  visible: boolean;
-  selectedIndex: number;
-  money: number;
-  /** Categoría actualmente elegida. Null muestra lista de categorías */
-  category: "food" | "toys" | "themes" | null;
-  /** id del ítem en proceso de confirmación */
-  confirming: string | null;
-  /** mensaje de error por falta de saldo */
-  error: string | null;
+    onBuy: (itemId: string) => void;
+    visible: boolean;
+    selectedIndex: number;
+    money: number;
+    category: "food" | "toys" | "theme" | "decoration" | null;
+    confirming: string | null;
+    error: string | null;
+
 };
 
-export const shopItems = [
-  {
-    id: "food",
-    name: "Comida deliciosa",
-    price: 5,
-    image: "/images/shop-items/food/orange-juice.png",
-    category: "food",
-  },
-  {
-    id: "plant",
-    name: "Planta decorativa",
-    price: 15,
-    image: "/images/shop-items/decoration/plantita.png",
-    category: "toys",
-  },
-  {
-    id: "dragon",
-    name: "Peluche suave",
-    price: 20,
-    image: "/images/shop-items/toys/dragoncito.png",
-    category: "toys",
-  },
-  {
-    id: "house",
-    name: "Casa nueva cómoda",
-    price: 40,
-    image: "/images/shop-items/house.png",
-    category: "toys",
-  },
-  {
-    id: "toy",
-    name: "Peluche cute",
-    price: 40,
-    image: "/images/shop-items/toys/peluche_cute.png",
-    category: "toys",
-  },
-  {
-    id: "toy",
-    name: "Peluche cute",
-    price: 40,
-    image: "/images/shop-items/toys/majimbuu.png",
-    category: "toys",
-  },
-  {
-    id: "toy",
-    name: "Peluche cute",
-    price: 40,
-    image: "/images/shop-items/toys/cotito.png",
-    category: "toys",
-  },
-] as const;
+// Interfaz para los ítems cargados desde la base de datos
+interface ShopItem {
+    id: string;
+    name: string;
+    description: string;
+    price: number;
+    category: string;
+    image_url: string;
+}
 
-/**
- * Pantalla completa de la tienda.
- * Se muestra en lugar de la pantalla principal y no como modal.
- */
 export default function ShopScreen({
-  visible,
-  selectedIndex,
-  money,
-  category,
-  confirming,
-  error,
-}: ShopScreenProps) {
-  if (!visible) return null;
+                                       visible,
+                                       selectedIndex,
+                                       money,
+                                       category,
+                                       confirming,
+                                       error,
+                                       onBuy,
+                                   }: ShopScreenProps) {
+    const [items, setItems] = useState<ShopItem[]>([]);
+    const [loadError, setLoadError] = useState<string | null>(null);
+    const listRef = useRef<HTMLDivElement>(null);
 
-  const categories = [
-    { id: "food", name: "Food" },
-    { id: "toys", name: "Toys" },
-    { id: "themes", name: "Themes" },
-  ] as const;
+    // 🔁 Cargar items desde Supabase cuando se muestra la tienda
+    useEffect(() => {
+        if (!visible) return;
 
-  const visibleItems = category
-    ? [
-        ...shopItems.filter((i) => i.category === category),
-        { id: "back", name: "← Volver", price: 0, category: "back" },
-      ]
-    : [
-        ...categories.map((c) => ({
-          id: c.id,
-          name: c.name,
-          price: 0,
-          category: "category",
-        })),
-        { id: "exit", name: "✖️ Salir de la tienda", price: 0, category: "exit" },
-      ];
-  const listRef = useRef<HTMLDivElement>(null);
+        const fetchItems = async () => {
+            try {
+                const { data, error } = await supabase
+                    .from("noa_shop_items")
+                    .select("*")
+                   // .order("name");
+                console.log("data: ", data);
+                if (error) {
+                    console.error("Error al cargar la tienda:", error);
+                    setLoadError("No se pudo cargar la tienda.");
+                } else {
+                    setItems(data || []);
+                    setLoadError(null);
+                }
+            } catch (err) {
+                console.error("Error inesperado en tienda:", err);
+                setLoadError("Error desconocido al cargar tienda.");
+            }
+        };
 
-  useEffect(() => {
-    const itemEl = listRef.current?.querySelector(
-      `[data-index="${selectedIndex}"]`,
-    ) as HTMLElement | null;
-    if (itemEl) {
-      itemEl.scrollIntoView({ block: "nearest", behavior: "smooth" });
+        fetchItems();
+    }, [visible]);
+
+    // 🌀 Asegura que el ítem seleccionado esté centrado visualmente
+    useEffect(() => {
+        const el = listRef.current?.querySelector<HTMLElement>(
+            `[data-index="${selectedIndex}"]`
+        );
+        el?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, [selectedIndex]);
+
+    if (!visible) return null;
+
+    // ✅ Si se está confirmando la compra
+    if (confirming) {
+        const item = items.find((i) => i.id === confirming);
+        return (
+            <div className="absolute inset-0 bg-[#113] z-30 text-blue-200 pixel-font p-3 flex flex-col items-center justify-center border-2 border-blue-400">
+                <h2 className="text-center mb-2 text-sm">Confirmar compra</h2>
+                <p className="text-center text-xs mb-2">
+                    ¿Comprar <strong>{item?.name}</strong> por{" "}
+                    <strong>{item?.price} 🪙</strong>?
+                </p>
+                <p className="text-[10px]">A = Sí &nbsp; B = No</p>
+                <button
+                    onClick={() => confirming && onBuy(confirming)}
+                    className="hidden"
+                    id="confirm-buy-trigger"
+                ></button>
+            </div>
+        );
     }
-  }, [selectedIndex]);
 
-  return (
-    <div className="absolute inset-0 z-40 pixel-font bg-[#001] text-blue-200 border-4 border-blue-400 shadow-[6px_6px_0px_#000] p-4 flex flex-col overflow-hidden">
-      <div className="flex flex-col gap-2 overflow-hidden flex-1">
-        <div className="flex-shrink-0">
-          <h2 className="text-lg border-b-2 border-blue-400 pb-1 text-center">
-            🛍️ Tienda Pixel
-          </h2>
-          <div className="text-center text-xs bg-blue-900 py-1 px-2 rounded mb-1">
-            💰 Dinero disponible: <strong>{money}</strong>
-          </div>
-        </div>
+    // 🧭 Construir lista visible de ítems o categorías
+    const filteredItems = items?.filter((i) => i.category === category) ?? [];
 
-        <div className="flex-grow overflow-hidden flex flex-col justify-between">
-          {confirming ? (
-            <div className="text-center space-y-2">
-              <p>
-                ¿Comprar {" "}
-                <strong>
-                  {shopItems.find((i) => i.id === confirming)?.name}
-                </strong>{" "}
-                por {shopItems.find((i) => i.id === confirming)?.price} 🪙?
-              </p>
-              <p className="text-xs">A = Sí, B = No</p>
+    const displayList = category
+        ? [
+            ...filteredItems,
+            {
+                id: "back",
+                name: "← Volver",
+                description: "",
+                price: 0,
+                category: "navigation",
+                image_url: "",
+            },
+        ]
+
+        : [
+            { id: "food", name: "🍔 Comida", description: "", price: 0, category: "category", image_url: "" },
+            { id: "toys", name: "🧸 Juguetes", description: "", price: 0, category: "category", image_url: "" },
+            { id: "theme", name: "🎮 Temas", description: "", price: 0, category: "category", image_url: "" },
+            { id: "decoration", name: "🏠 Decoración", description: "", price: 0, category: "category", image_url: "" },
+            { id: "exit", name: "✖️ Salir", description: "", price: 0, category: "exit", image_url: "" },
+        ];
+
+    return (
+        <div className="absolute inset-0 bg-[#113] z-20 text-blue-200 pixel-font p-2 border-2 border-blue-400 flex flex-col overflow-hidden">
+            <h2 className="text-center text-sm mb-1">🛍️ Tienda Pixel</h2>
+
+            <div className="text-center text-[10px] mb-2">
+                💰 Dinero: <strong>{money}</strong>
             </div>
-          ) : (
-            <div ref={listRef} className="overflow-y-auto flex flex-col gap-2 pb-2">
-              {visibleItems.map((item, idx) => (
-                <div
-                  key={item.id}
-                  data-index={idx}
-                  className={`min-w-[90px] flex-shrink-0 flex flex-col items-center px-2 py-2 bg-[#113] border border-blue-400 rounded transition-all duration-150 text-center ${
-                    selectedIndex === idx
-                      ? "ring-2 ring-yellow-300 bg-blue-800 animate-pixel-fill"
-                      : ""
-                  }`}
-                >
-                  {"image" in item && item.image && (
-                    <img
-                      src={item.image}
-                      alt={item.name}
-                      className="w-8 h-8 mb-1 pixel-art"
-                    />
-                  )}
-                  <span className="text-xs mb-1">{item.name}</span>
-                  {item.price > 0 && item.category !== "category" && (
-                    <span className="text-[10px]">{item.price} 🪙</span>
-                  )}
-                </div>
-              ))}
-              {error && <p className="text-red-400 text-xs ml-2">{error}</p>}
+
+            {/* 🧾 Lista desplazable de ítems */}
+            <div
+                ref={listRef}
+                className="flex-grow overflow-y-auto flex flex-col gap-2 pb-2"
+            >
+                {displayList.map((item, idx) => (
+                    <div
+                        key={item.id}
+                        data-index={idx}
+                        className={`flex items-center px-2 py-1 rounded transition-all duration-100 ${
+                            selectedIndex === idx
+                                ? "bg-blue-800 ring-2 ring-yellow-300 animate-pixel-fill"
+                                : "hover:bg-blue-700"
+                        }`}
+                    >
+                        {item.image_url && (
+                            <img
+                                src={item.image_url}
+                                alt={item.name}
+                                className="w-8 h-8 mr-2 pixel-art"
+                            />
+                        )}
+                        <div className="flex-1 text-xs">
+                            <div>{item.name}</div>
+                            {item.price > 0 && (
+                                <div className="text-[10px] text-blue-300">
+                                    {item.price} 🪙
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                ))}
+                {error && <p className="text-red-500 text-[10px] px-2">{error}</p>}
+                {loadError && <p className="text-red-400 text-[10px] px-2">{loadError}</p>}
             </div>
-          )}
+
+            <p className="text-center text-[10px] mt-1">
+                Usa D-Pad para moverte • A = Seleccionar • B = Volver
+            </p>
         </div>
-      </div>
-    </div>
-  );
+    );
 }
