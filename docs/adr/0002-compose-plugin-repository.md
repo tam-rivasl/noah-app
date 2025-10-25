@@ -1,4 +1,6 @@
-# ADR 0002: Añadir repositorio JetBrains Compose para el plugin Kotlin Compose Compiler
+# ADR 0002: Añadir repositorio JetBrains Compose para el plugin Kotlin Compose Compiler (obsoleto)
+
+> **Estado:** Reemplazado por [ADR 0003](./0003-compose-stable-stack.md)
 
 ## Contexto
 El build fallaba con el error `Could not find org.jetbrains.kotlin:kotlin-compose-compiler-gradle-plugin:2.0.21` al sincronizar Gradle. El repositorio configurado previamente (`kotlin/p/kotlin/dev`) no aloja el artefacto del plugin requerido por la versión actual del proyecto.
