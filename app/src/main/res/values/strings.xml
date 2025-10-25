@@ -1,0 +1,22 @@
+<resources>
+    <string name="app_name">Noa Tamagotchi</string>
+    <string name="action_feed">Alimentar</string>
+    <string name="action_sleep">Dormir</string>
+    <string name="action_play">Jugar</string>
+    <string name="action_bathe">Bañar</string>
+    <string name="action_pet">Acariciar</string>
+    <string name="nav_home">Inicio</string>
+    <string name="nav_shop">Tienda</string>
+    <string name="nav_minigames">Mini juegos</string>
+    <string name="nav_settings">Configuración</string>
+    <string name="nav_start">Comenzar</string>
+    <string name="label_coins">Monedas</string>
+    <string name="label_daily_reward">Recompensa diaria</string>
+    <string name="label_energy">Energía</string>
+    <string name="label_hunger">Hambre</string>
+    <string name="label_sleep">Sueño</string>
+    <string name="label_health">Salud</string>
+    <string name="label_happiness">Felicidad</string>
+    <string name="mini_game_catch">Atrapa la pelota</string>
+    <string name="mini_game_jump">Salta los obstáculos</string>
+</resources>
