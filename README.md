@@ -44,3 +44,7 @@ gradle test
 ```
 
 Para ejecutar en dispositivo/emulador utiliza Android Studio y selecciona `Run > Run 'app'`.
+
+## Solución de problemas
+
+- **Error `Could not find org.jetbrains.kotlin:kotlin-compose-compiler-gradle-plugin`**: asegúrate de haber sincronizado el proyecto tras añadir el repositorio JetBrains Compose (`https://maven.pkg.jetbrains.space/public/p/compose/dev`). Ejecuta `gradle --refresh-dependencies` si persiste.

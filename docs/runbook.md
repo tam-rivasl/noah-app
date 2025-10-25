@@ -9,6 +9,7 @@
 ## Troubleshooting
 - **Gradle sin wrapper**: Instalar Gradle 8.7+ (`sdkman`, `asdf` o paquete oficial). Exportar `GRADLE_HOME` si es necesario.
 - **Fallos de compilación por dependencias**: Ejecutar `gradle --refresh-dependencies`.
+- **`kotlin-compose-compiler-gradle-plugin` no encontrado**: Verificar que el repositorio JetBrains Compose (`https://maven.pkg.jetbrains.space/public/p/compose/dev`) permanezca configurado en `build.gradle.kts`.
 - **DataStore corrupto**: Borrar datos de la app (`Settings > Apps > Noa Tamagotchi > Storage > Clear data`).
 - **Lentitud o animaciones trabadas**: Reducir duración de animaciones en opciones de desarrollador o desactivar mini juegos temporales.
 

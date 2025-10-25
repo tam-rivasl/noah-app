@@ -15,6 +15,7 @@ El proyecto migra una aplicación previa a un juego móvil nativo Android escrit
 - AndroidX Lifecycle ViewModel + StateFlow
 - DataStore Preferences + Kotlin Serialization
 - Coroutines, Turbine para pruebas reactivas
+- Repositorios Gradle: Google, Maven Central, JetBrains Kotlin Dev y JetBrains Compose Dev (para el plugin `kotlin-compose-compiler`)
 
 ## Contratos principales
 - `NoaRepository.performAction(GameAction): ActionResult`
@@ -34,3 +35,4 @@ El proyecto migra una aplicación previa a un juego móvil nativo Android escrit
 - Tests unitarios en `NoaRepositoryTest` verifican acciones clave (alimentar, recompensa diaria) usando DataStore en disco temporal.
 - Validación manual en Android Studio para navegación, mini juegos y animaciones.
 - Pipeline sugerida: `lint → typecheck → test → assemble` (extensible a SBOM, análisis estático, empaquetado Docker si aplica backend futuro).
+- Validar sincronización de dependencias tras cambios de repositorios (`gradle --refresh-dependencies`).
