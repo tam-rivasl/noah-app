@@ -1,6 +1,6 @@
 # Referencias Oficiales
 - [Jetpack Compose Material 3](https://developer.android.com/jetpack/compose/material3)
-- [Android Architecture Components - ViewModel](https://developer.android.com/topic/libraries/architecture/viewmodel)
-- [DataStore Preferences](https://developer.android.com/topic/libraries/architecture/datastore)
-- [Kotlin Coroutines](https://kotlinlang.org/docs/coroutines-overview.html)
-- [Navigation Compose](https://developer.android.com/jetpack/compose/navigation)
+- [State and ViewModel en Compose](https://developer.android.com/jetpack/compose/state)
+- [Jetpack DataStore](https://developer.android.com/topic/libraries/architecture/datastore)
+- [Kotlin Serialization](https://kotlinlang.org/docs/serialization.html)
+- [Kotlin Coroutines Test](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-test/)

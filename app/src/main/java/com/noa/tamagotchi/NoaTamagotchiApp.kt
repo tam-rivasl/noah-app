@@ -1,11 +1,11 @@
 package com.noa.tamagotchi
 
 import android.app.Application
-import com.noa.tamagotchi.data.NoaPreferencesDataSource
-import com.noa.tamagotchi.data.NoaRepository
+import com.noa.tamagotchi.data.TamagotchiPreferencesDataSource
+import com.noa.tamagotchi.data.TamagotchiRepository
 
 class NoaTamagotchiApp : Application() {
-    val repository: NoaRepository by lazy {
-        NoaRepository(NoaPreferencesDataSource.fromContext(this))
+    val repository: TamagotchiRepository by lazy {
+        TamagotchiRepository(TamagotchiPreferencesDataSource.fromContext(this))
     }
 }
