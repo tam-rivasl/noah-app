@@ -1,5 +1,6 @@
 package com.noa.tamagotchi.ui.game
 
+import android.annotation.SuppressLint
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -36,7 +37,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
@@ -71,7 +71,7 @@ private val EATING_FRAMES = listOf(
     R.drawable.noa_comiendo_1,
     R.drawable.noa_comiendo_2
 )
-private const val SLEEPING_FRAME = R.drawable.noa_durmiendo_1
+private  val SLEEPING_FRAME = R.drawable.noa_durmiendo_1
 private val NOA_SIZE = 176.dp
 
 @Composable
@@ -156,6 +156,7 @@ private fun NoaGameScreenContent(
     }
 }
 
+@SuppressLint("UnusedBoxWithConstraintsScope")
 @Composable
 private fun NoaCharacter(
     state: NoaState,
@@ -228,7 +229,6 @@ private fun NoaCharacter(
                 contentDescription = spriteDescription,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.FillBounds,
-                filterQuality = FilterQuality.None
             )
 
             if (state == NoaState.SLEEPING) {
