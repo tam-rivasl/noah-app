@@ -1,66 +1,63 @@
 package com.noa.tamagotchi.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.noa.tamagotchi.data.TamagotchiRepository
-import com.noa.tamagotchi.domain.model.TamagotchiAction
-import com.noa.tamagotchi.ui.state.NoaUiState
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-class NoaViewModel(private val repository: TamagotchiRepository) : ViewModel() {
+/**
+ * Simple state holder that exposes Noa's activity and orchestrates timed transitions.
+ */
+class NoaViewModel : ViewModel() {
 
-    private val _uiState = MutableStateFlow(NoaUiState())
-    val uiState: StateFlow<NoaUiState> = _uiState
+    private val _state = MutableStateFlow(NoaState.WALKING)
+    val state: StateFlow<NoaState> = _state.asStateFlow()
 
-    init {
-        observeRepository()
+    private var feedJob: Job? = null
+
+    /**
+     * Forces Noa back into the walking loop, cancelling any ongoing animation jobs.
+     */
+    fun walk() {
+        feedJob?.cancel()
+        feedJob = null
+        _state.value = NoaState.WALKING
     }
 
-    fun refresh() {
-        viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true)
-            val state = repository.refresh()
-            _uiState.value = NoaUiState(isLoading = false, state = state)
+    /**
+     * Triggers the eating animation for [FEEDING_DURATION_MS] before returning to walking.
+     * If Noa is sleeping the request is ignored until she wakes up via [walk].
+     */
+    fun feed() {
+        if (_state.value == NoaState.SLEEPING) {
+            return
         }
-    }
-
-    fun onAction(action: TamagotchiAction) {
-        viewModelScope.launch {
-            val state = repository.applyAction(action)
-            _uiState.value = NoaUiState(isLoading = false, state = state)
-        }
-    }
-
-    fun onDailyReward() {
-        viewModelScope.launch {
-            val state = repository.rewardDailyCoins()
-            _uiState.value = NoaUiState(isLoading = false, state = state)
-        }
-    }
-
-    private fun observeRepository() {
-        viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true)
-            repository.state.collectLatest { state ->
-                _uiState.value = NoaUiState(isLoading = false, state = state)
+        feedJob?.cancel()
+        feedJob = viewModelScope.launch {
+            try {
+                _state.value = NoaState.EATING
+                delay(FEEDING_DURATION_MS)
+                _state.value = NoaState.WALKING
+            } finally {
+                feedJob = null
             }
         }
     }
 
-    companion object {
-        fun factory(repository: TamagotchiRepository): ViewModelProvider.Factory =
-            object : ViewModelProvider.Factory {
-                override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                    if (modelClass.isAssignableFrom(NoaViewModel::class.java)) {
-                        @Suppress("UNCHECKED_CAST")
-                        return NoaViewModel(repository) as T
-                    }
-                    throw IllegalArgumentException("Unknown ViewModel class")
-                }
-            }
+    /**
+     * Puts Noa to sleep until the user explicitly requests [walk].
+     */
+    fun sleep() {
+        feedJob?.cancel()
+        feedJob = null
+        _state.value = NoaState.SLEEPING
+    }
+
+    private companion object {
+        const val FEEDING_DURATION_MS = 2_500L
     }
 }
