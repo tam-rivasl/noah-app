@@ -3,13 +3,13 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import Image from "next/image";
 import ScoreBoard from "./score-board";
-import { supabase } from "@/lib/supabase";
 
 interface MiniGameSpaceProps {
   onExit: () => void;
   moveCommand: "left" | "right" | "up" | "down" | null;
   startCommand: boolean;
   onGameEnd?: (score: number, newRecord: boolean) => void;
+  sfxEnabled?: boolean;
 }
 
 interface Meteor {
@@ -29,66 +29,110 @@ const INITIAL_SPEED = 4;
 const MAX_SPEED = 10;
 const SPEED_INCREASE_INTERVAL = 10000;
 const SPAWN_DECREASE_AMOUNT = 150;
+const SCORE_STORAGE_KEY = "game_scores_space";
+const MAX_SCORES_PER_GAME = 20;
+const SESSION_SPACE_KEY = "last_space_run_id";
+
+const loadScores = () => {
+  try {
+    const raw = localStorage.getItem(SCORE_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+};
+
+const saveScores = (records: any[]) => {
+  try {
+    localStorage.setItem(SCORE_STORAGE_KEY, JSON.stringify(records));
+  } catch (err) {
+    console.error("No se pudo guardar el historial", err);
+  }
+};
 
 export default function MiniGameSpace({
                                         onExit,
                                         moveCommand,
                                         startCommand,
                                         onGameEnd,
+                                        sfxEnabled = true,
                                       }: MiniGameSpaceProps) {
   const [started, setStarted] = useState(false);
   const [meteors, setMeteors] = useState<Meteor[]>([]);
   const [playerX, setPlayerX] = useState((CANVAS_WIDTH - PLAYER_WIDTH) / 2);
   const [gameOver, setGameOver] = useState(false);
   const [viewingRecords, setViewingRecords] = useState(false);
+  const savedRef = useRef(false);
+  const gameOverSoundPlayedRef = useRef(false);
 
   const startRef = useRef<number>(0); // Referencia al inicio del juego
   const speedRef = useRef(INITIAL_SPEED);
   const spawnIntervalRef = useRef(INITIAL_SPAWN_INTERVAL);
   const spawnTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const runIdRef = useRef(`${Date.now()}-${Math.random()}`);
 
-  // ✅ Guarda la puntuación en Supabase al finalizar el juego
-  const saveRecord = async (score: number) => {
+  // Guarda la puntuación local al finalizar el juego
+  const saveRecord = (score: number) => {
     const elapsedMs = Date.now() - startRef.current;
     const m = Math.floor(elapsedMs / 60000);
     const s = Math.floor((elapsedMs % 60000) / 1000);
     const duration = `00:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 
-    try {
-      await supabase.from("game_scores").insert([
-        {
-          score,
-          game_type: "space",
-          date: new Date().toISOString().split("T")[0],
-          time: duration,
-        },
-      ]);
-    } catch (e) {
-      console.error("❌ Error al guardar puntuación de space:", e);
-    }
-
-    // Verifica si es nuevo récord
-    const { data } = await supabase
-        .from("game_scores")
-        .select("score")
-        .eq("game_type", "space")
-        .order("score", { ascending: false })
-        .limit(1);
-
-    const prevBest = data?.[0]?.score ?? 0;
-    const isNew = score > prevBest;
+    const all = loadScores();
+    const sameGame = all.filter((item: any) => item.gameType === "space");
+    const bestBefore = sameGame.reduce(
+        (max: number, item: any) => Math.max(max, item.score ?? 0),
+        0,
+    );
+    const entry = {
+      id: `${Date.now()}-${Math.random()}`,
+      date: new Date().toISOString().split("T")[0],
+      time: duration,
+      score,
+      gameType: "space",
+    };
+    const updatedSame = [...sameGame, entry]
+        .sort((a, b) => b.score - a.score)
+        .slice(0, MAX_SCORES_PER_GAME);
+    const updated = [
+      ...all.filter((item: any) => item.gameType !== "space"),
+      ...updatedSame,
+    ];
+    saveScores(updated);
+    const isNew = score > bestBefore;
     onGameEnd?.(score, isNew);
   };
 
   // Ejecuta cuando termina el juego
   useEffect(() => {
-    if (!gameOver) return;
+    if (!gameOver || savedRef.current) return;
+    const lastRunSaved = sessionStorage.getItem(SESSION_SPACE_KEY);
+    if (lastRunSaved && lastRunSaved === runIdRef.current) return;
+    savedRef.current = true;
+    sessionStorage.setItem(SESSION_SPACE_KEY, runIdRef.current);
 
     const elapsedMs = Date.now() - startRef.current;
     const score = Math.floor(elapsedMs / 1000); // 1 punto por segundo
 
     saveRecord(score);
+  }, [gameOver, saveRecord]);
+
+  useEffect(() => {
+    if (!gameOver) {
+      savedRef.current = false;
+      gameOverSoundPlayedRef.current = false;
+    }
   }, [gameOver]);
+
+  useEffect(() => {
+    if (!gameOver || gameOverSoundPlayedRef.current || !sfxEnabled) return;
+    const el = document.getElementById("gameover-sound") as HTMLAudioElement | null;
+    if (el) {
+      gameOverSoundPlayedRef.current = true;
+      el.currentTime = 0;
+      void el.play();
+    }
+  }, [gameOver, sfxEnabled]);
 
   // Instrucciones animadas
   const instructions = [
@@ -130,6 +174,9 @@ export default function MiniGameSpace({
     startRef.current = Date.now(); // Marca el inicio del juego
     speedRef.current = INITIAL_SPEED;
     spawnIntervalRef.current = INITIAL_SPAWN_INTERVAL;
+    savedRef.current = false;
+    runIdRef.current = `${Date.now()}-${Math.random()}`;
+    sessionStorage.removeItem(SESSION_SPACE_KEY);
   }, []);
 
   useEffect(() => {
@@ -260,7 +307,7 @@ export default function MiniGameSpace({
         {gameOver && (
             viewingRecords ? (
                 <ScoreBoard
-                    gameType="catch"
+                    gameType="space"
                     onClose={onExit}
                     embedded
                     moveCommand={moveCommand}
@@ -280,3 +327,7 @@ export default function MiniGameSpace({
       </div>
   );
 }
+
+
+
+

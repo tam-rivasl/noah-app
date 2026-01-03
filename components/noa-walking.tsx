@@ -1,13 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import Image from "next/image";
+
+const SPRITE_SIZE = 45;
+const STEP = 5;
 
 export default function NoaWalking() {
   const [frameIndex, setFrameIndex] = useState(0);
-  const [positionX, setPositionX] = useState(100);
+  const [positionX, setPositionX] = useState(0);
   const [direction, setDirection] = useState<"right" | "left">("right");
   const [emote, setEmote] = useState<string | null>(null);
+  const [walkAreaWidth, setWalkAreaWidth] = useState(300);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const resizeObserverRef = useRef<ResizeObserver | null>(null);
 
   const frames = [
     "/images/spreeds/walking/noa-caminando-1.png",
@@ -18,64 +24,92 @@ export default function NoaWalking() {
     "/images/spreeds/walking/noa-caminando-6.png",
   ];
 
-  // Animar frames
+  // Avance de frames
   useEffect(() => {
     const interval = setInterval(() => {
       setFrameIndex((prev) => (prev + 1) % frames.length);
     }, 150);
     return () => clearInterval(interval);
+  }, [frames.length]);
+
+  // Medir el ancho disponible para caminar
+  const measureWidth = useCallback(() => {
+    const parentWidth =
+      containerRef.current?.parentElement?.getBoundingClientRect().width ??
+      window.innerWidth ??
+      300;
+    setWalkAreaWidth(parentWidth);
+    const maxX = Math.max(0, parentWidth - SPRITE_SIZE);
+    setPositionX((prev) => Math.min(prev, maxX));
   }, []);
 
-  // Movimiento automático
+  useEffect(() => {
+    measureWidth();
+    const onResize = () => measureWidth();
+    window.addEventListener("resize", onResize);
+    const parent = containerRef.current?.parentElement;
+    if (parent && "ResizeObserver" in window) {
+      resizeObserverRef.current = new ResizeObserver(() => measureWidth());
+      resizeObserverRef.current.observe(parent);
+    }
+    return () => {
+      window.removeEventListener("resize", onResize);
+      resizeObserverRef.current?.disconnect();
+    };
+  }, [measureWidth]);
+
+  // Movimiento automatico
   useEffect(() => {
     const moveInterval = setInterval(() => {
       setPositionX((prev) => {
+        const maxX = Math.max(0, walkAreaWidth - SPRITE_SIZE);
         if (direction === "right") {
-          if (prev >= 190) {
+          if (prev >= maxX) {
             setDirection("left");
-            return prev - 5;
+            return Math.max(maxX - STEP, 0);
           }
-          return prev + 5;
-        } else {
-          if (prev <= 10) {
-            setDirection("right");
-            return prev + 5;
-          }
-          return prev - 5;
+          return Math.min(prev + STEP, maxX);
         }
+        if (prev <= 0) {
+          setDirection("right");
+          return Math.min(STEP, maxX);
+        }
+        return Math.max(prev - STEP, 0);
       });
 
-      // De vez en cuando suelta un corazón ❤️
-      if (Math.random() < 0.2) { // 20% de probabilidad
+      if (Math.random() < 0.2) {
         spawnEmote();
       }
-    }, 200); // Velocidad de movimiento
+    }, 200);
     return () => clearInterval(moveInterval);
-  }, [direction]);
+  }, [direction, walkAreaWidth]);
 
   const spawnEmote = () => {
     setEmote("❤️");
-    setTimeout(() => setEmote(null), 1000); // El corazón desaparece
+    setTimeout(() => setEmote(null), 1000);
   };
 
   return (
-    <div className="absolute bottom-4 w-16 h-16" style={{ left: positionX }}>
-      {/* Emote flotante */}
+    <div
+      ref={containerRef}
+      className="absolute bottom-4"
+      style={{ left: positionX, width: SPRITE_SIZE, height: 35 }}
+    >
       {emote && (
         <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 text-lg animate-float-up">
           {emote}
         </div>
       )}
-
-      {/* Noa caminando */}
       <div className="w-full h-full relative">
         <Image
           src={frames[frameIndex]}
           alt="Noa caminando"
-          width={80}
-          height={80}
-          style={{ width: "80px", height: "80px" }}
-          className={`object-contain pixel-art ${direction === "left" ? "scale-x-[-1]" : ""}`}
+          width={SPRITE_SIZE}
+          height={SPRITE_SIZE}
+          style={{ width: `${SPRITE_SIZE}px`, height: `${SPRITE_SIZE}px` }}
+          className={`object-contain pixel-art ${
+            direction === "left" ? "scale-x-[-1]" : ""
+          }`}
         />
       </div>
     </div>

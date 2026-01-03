@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import StatusBars from "./status-bars";
 import ActionButtons from "./action-buttons";
 import NoaWalking from "./noa-walking";
@@ -13,8 +13,11 @@ import MiniGameCatch from "./mini-game-catch";
 import MiniGameSpace from "./mini-game-space";
 import AudioSettingsModal from "./AudioSettingsModal";
 import GamesModal from "./games-modal";
-import { supabase } from "@/lib/supabase";
-import ShopScreen from "@/components/shop-screen";
+import ShopScreen, {
+  type ShopCategory,
+  type ShopItem,
+  type ShopMenuOption,
+} from "@/components/shop-screen";
 
 export type NoaState = {
   hunger: number;
@@ -26,6 +29,9 @@ export type NoaState = {
 type Inventory = {
   plant: boolean;
   teddy: boolean;
+  themes: string[];
+  decorations: string[];
+  toys: string[];
 };
 
 const initialState: NoaState = {
@@ -38,11 +44,153 @@ const initialState: NoaState = {
 const initialInventory: Inventory = {
   plant: false,
   teddy: false,
+  themes: [],
+  decorations: [],
+  toys: [],
 };
+
+const SHOP_CATEGORIES: ShopCategory[] = [
+  "food",
+  "toys",
+  "theme",
+  "decoration",
+];
+
+const SHOP_MENU_OPTIONS: ShopMenuOption[] = ["inventory", ...SHOP_CATEGORIES];
+const INVENTORY_CATEGORY_ORDER: Record<string, number> = {
+  decoration: 0,
+  toys: 1,
+  theme: 2,
+};
+const SHELF_POSITIONS = [
+  { left: "25%", top: "16%" },
+  { left: "40%", top: "16%" },
+  { left: "54%", top: "16%" },
+  { left: "25%", top: "36%" },
+  { left: "53%", top: "36%" },
+  { left: "76%", top: "36%" },
+];
+const MAX_ACTIVE_ITEMS = SHELF_POSITIONS.length;
+
+const FALLBACK_SHOP_ITEMS: ShopItem[] = [
+  {
+    id: "food-01",
+    name: "Jugo de naranja",
+    description: "Recupera algo de energia.",
+    price: 6,
+    category: "food",
+    image_url: "/images/shop-items/food/orange-juice.png",
+  },
+  {
+    id: "food-02",
+    name: "Hamburguesa especial",
+    description: "Comida completa que recarga energia y felicidad.",
+    price: 10,
+    category: "food",
+    image_url: "/images/shop-items/food/hamburguesa-food.png",
+  },
+  {
+    id: "food-03",
+    name: "Comida casera",
+    description: "Un plato abundante que llena la pancita.",
+    price: 9,
+    category: "food",
+    image_url: "/images/shop-items/food/comida-plato.png",
+  },
+  {
+    id: "food-04",
+    name: "Huesito crujiente",
+    description: "Snack rapido que sube la energia.",
+    price: 5,
+    category: "food",
+    image_url: "/images/shop-items/food/huesito-food.png",
+  },
+  {
+    id: "toys-01",
+    name: "Cotito",
+    description: "Juguete suave y reconfortante.",
+    price: 12,
+    category: "toys",
+    image_url: "/images/shop-items/toys/cotito.png",
+  },
+  {
+    id: "toys-02",
+    name: "Dragoncito",
+    description: "Sube felicidad rapido.",
+    price: 15,
+    category: "toys",
+    image_url: "/images/shop-items/toys/dragoncito.png",
+  },
+  {
+    id: "toys-03",
+    name: "Majin Buu",
+    description: "Juguete grande, aumenta felicidad.",
+    price: 18,
+    category: "toys",
+    image_url: "/images/shop-items/toys/majimbuu.png",
+  },
+  {
+    id: "toys-04",
+    name: "Peluche Cute",
+    description: "Favorito de Noa.",
+    price: 10,
+    category: "toys",
+    image_url: "/images/shop-items/toys/peluche_cute.png",
+  },
+  {
+    id: "theme-01",
+    name: "Tema azul con patitas",
+    description: "Skin azul con huellas.",
+    price: 20,
+    category: "theme",
+    image_url: "/images/shop-items/theme/azul-con-patitas.png",
+  },
+  {
+    id: "theme-02",
+    name: "Tema azul simple",
+    description: "Skin azul minimal.",
+    price: 18,
+    category: "theme",
+    image_url: "/images/shop-items/theme/azul-patitas.png",
+  },
+  {
+    id: "theme-03",
+    name: "Tema Game Boy",
+    description: "Skin estilo consola.",
+    price: 22,
+    category: "theme",
+    image_url: "/images/shop-items/theme/game-boy.png",
+  },
+  {
+    id: "theme-04",
+    name: "Tema textura",
+    description: "Fondo texturizado.",
+    price: 16,
+    category: "theme",
+    image_url: "/images/shop-items/theme/texture4.png",
+  },
+  {
+    id: "dec-01",
+    name: "Casa deco",
+    description: "Decoracion para el fondo.",
+    price: 14,
+    category: "decoration",
+    image_url: "/images/shop-items/decoration/house.png",
+  },
+  {
+    id: "dec-02",
+    name: "Plantita",
+    description: "Pequena planta decorativa.",
+    price: 9,
+    category: "decoration",
+    image_url: "/images/shop-items/decoration/plantita.png",
+  },
+];
 
 export default function NoaTamagotchi() {
   const [noaState, setNoaState] = useState<NoaState>(initialState);
   const [inventory, setInventory] = useState<Inventory>(initialInventory);
+  const [activeItemIds, setActiveItemIds] = useState<string[]>([]);
   const [currentAction, setCurrentAction] = useState<
       "eating" | "petting" | "gaming" | null
   >(null);
@@ -70,13 +218,38 @@ export default function NoaTamagotchi() {
   const [gamesVisible, setGamesVisible] = useState(false);
   const [audioIndex, setAudioIndex] = useState(0);
   const [shopIndex, setShopIndex] = useState(0);
-  const [shopCategory, setShopCategory] = useState<"food" | "toys" | "theme" | null>(null);
+  const [shopCategory, setShopCategory] = useState<ShopMenuOption | null>(null);
+  const [shopItems] = useState<ShopItem[]>(FALLBACK_SHOP_ITEMS);
   const [coinsSpent, setCoinsSpent] = useState(0);
   const [coinsEarned, setCoinsEarned] = useState(0);
   const [shopConfirm, setShopConfirm] = useState<string | null>(null);
   const [shopError, setShopError] = useState<string | null>(null);
+  const [purchasedItemIds, setPurchasedItemIds] = useState<string[]>([]);
   const [bgmEnabled, setBgmEnabled] = useState(true);
   const [actionSoundEnabled, setActionSoundEnabled] = useState(true);
+  const [activeThemeId, setActiveThemeId] = useState<string | null>(null);
+  const [inventoryConfirm, setInventoryConfirm] = useState<{
+    id: string;
+    type: "theme" | "toggle";
+  } | null>(null);
+
+  const deriveDefaultActiveItems = useCallback(
+      (inv: Partial<Inventory>) => {
+        const ids: string[] = [];
+        const decorations = [...(inv.decorations ?? [])];
+        if (inv.plant) decorations.unshift("dec-02");
+        const toys = [...(inv.toys ?? [])];
+        if (inv.teddy) toys.unshift("toys-04");
+
+        [...decorations, ...toys].forEach((id) => {
+          if (ids.length < MAX_ACTIVE_ITEMS && !ids.includes(id)) {
+            ids.push(id);
+          }
+        });
+        return ids;
+      },
+      [],
+  );
 
   useEffect(() => {
     const spent = localStorage.getItem("coinsSpent");
@@ -84,59 +257,321 @@ export default function NoaTamagotchi() {
     const earned = localStorage.getItem("coinsEarned");
     if (earned) setCoinsEarned(parseInt(earned, 10));
     const inv = localStorage.getItem("inventory");
-    if (inv) setInventory(JSON.parse(inv));
-  }, []);
-
-  // Load latest stats from Supabase
-  useEffect(() => {
-    const loadStats = async () => {
-      const { data } = await supabase
-          .from("noa_stats")
-          .select("*")
-          .order("updated_at", { ascending: false })
-          .limit(1);
-      if (data && data.length > 0) {
-        const latest = data[0];
-        setNoaState({
-          hunger: latest.hunger,
-          happiness: latest.happiness,
-          energy: latest.energy,
-          lastUpdated: Date.now(),
-        });
-        setCoinsEarned(latest.coins_earned ?? 0);
-        setCoinsSpent(latest.coins_spent ?? 0);
+    let parsedInventory: Partial<Inventory> | null = null;
+    if (inv) {
+      parsedInventory = JSON.parse(inv) as Partial<Inventory>;
+      setInventory({
+        plant: !!parsedInventory.plant,
+        teddy: !!parsedInventory.teddy,
+        themes: parsedInventory.themes ?? [],
+        decorations: parsedInventory.decorations ?? [],
+        toys: parsedInventory.toys ?? [],
+      });
+      if (parsedInventory.themes && parsedInventory.themes.length > 0) {
+        setActiveThemeId(
+            parsedInventory.themes[parsedInventory.themes.length - 1],
+        );
       }
-    };
-    loadStats();
-  }, []);
+    }
+    const savedActiveItems = localStorage.getItem("activeItemIds");
+    if (savedActiveItems) {
+      try {
+        const parsed = JSON.parse(savedActiveItems) as string[];
+        setActiveItemIds(parsed.slice(0, MAX_ACTIVE_ITEMS));
+      } catch (err) {
+        console.error("Error leyendo items activos", err);
+      }
+    } else {
+      setActiveItemIds(
+          deriveDefaultActiveItems(parsedInventory ?? initialInventory),
+      );
+    }
+    const savedTheme = localStorage.getItem("activeThemeId");
+    if (savedTheme) setActiveThemeId(savedTheme);
+    const purchased = localStorage.getItem("purchasedItemIds");
+    if (purchased) {
+      try {
+        const parsedPurchased = JSON.parse(purchased) as string[];
+        setPurchasedItemIds(parsedPurchased);
+      } catch (err) {
+        console.error("Error leyendo compras previas", err);
+      }
+    }
+  }, [deriveDefaultActiveItems]);
+
+  const allItemsMap = useMemo(() => {
+    const map = new Map<string, ShopItem>();
+    FALLBACK_SHOP_ITEMS.forEach((item) => map.set(item.id, item));
+    shopItems.forEach((item) => map.set(item.id, item));
+    return map;
+  }, [shopItems]);
+
+  const activeThemeImage = useMemo(() => {
+    if (!activeThemeId) return null;
+    return allItemsMap.get(activeThemeId)?.image_url ?? null;
+  }, [activeThemeId, allItemsMap]);
+
+  const gameboyStyle = useMemo<React.CSSProperties | undefined>(() => {
+    if (!activeThemeImage) return undefined;
+    return { ["--gameboy-bg" as string]: `url(${activeThemeImage})` };
+  }, [activeThemeImage]);
+
+  const ownedItemIds = useMemo(() => {
+    const ids = new Set<string>();
+    purchasedItemIds.forEach((id) => {
+      const item = allItemsMap.get(id);
+      if (item && item.category !== "food") ids.add(id);
+    });
+    inventory.themes.forEach((id) => ids.add(id));
+    inventory.decorations.forEach((id) => ids.add(id));
+    inventory.toys.forEach((id) => ids.add(id));
+    if (inventory.plant) ids.add("dec-02");
+    if (inventory.teddy) ids.add("toys-04");
+    return Array.from(ids);
+  }, [inventory, purchasedItemIds, allItemsMap]);
+
+  const ownedItems = useMemo(
+      () =>
+          ownedItemIds
+              .map((id) => allItemsMap.get(id))
+              .filter(Boolean) as ShopItem[],
+      [ownedItemIds, allItemsMap],
+  );
+
+  const ownedIdsSet = useMemo(
+      () => new Set<string>(ownedItemIds),
+      [ownedItemIds],
+  );
+
+  const availableShopItems = useMemo(
+      () =>
+          shopItems.filter(
+              (item) => item.category === "food" || !ownedIdsSet.has(item.id),
+          ),
+      [shopItems, ownedIdsSet],
+  );
+
+  const inventoryItems = useMemo(() => {
+    const items = ownedItems.filter((item) => item.category !== "food");
+    const sorted = [...items].sort((a, b) => {
+      const aActive = activeItemIds.includes(a.id) ? 1 : 0;
+      const bActive = activeItemIds.includes(b.id) ? 1 : 0;
+      if (aActive !== bActive) return bActive - aActive;
+      const aOrder = INVENTORY_CATEGORY_ORDER[a.category] ?? 99;
+      const bOrder = INVENTORY_CATEGORY_ORDER[b.category] ?? 99;
+      if (aOrder !== bOrder) return aOrder - bOrder;
+      return a.name.localeCompare(b.name);
+    });
+    return sorted;
+  }, [ownedItems, activeItemIds]);
+
+  const shelfItems = useMemo(
+      () =>
+          activeItemIds
+              .map((id) => allItemsMap.get(id))
+              .filter(
+                  (item): item is ShopItem =>
+                      !!item &&
+                      (item.category === "toys" ||
+                          (item.category === "decoration" && item.id === "dec-02")),
+              ),
+      [activeItemIds, allItemsMap],
+  );
+
+  const houseItem = useMemo(
+      () =>
+          activeItemIds
+              .map((id) => allItemsMap.get(id))
+              .find((item) => item?.id === "dec-01") ?? null,
+      [activeItemIds, allItemsMap],
+  );
 
   const money = coinsEarned - coinsSpent;
 
+  const confirmInventoryAction = (confirm: { id: string; type: "theme" | "toggle" }) => {
+    const item =
+        inventoryItems.find((i) => i.id === confirm.id) ||
+        allItemsMap.get(confirm.id);
+    if (!item) {
+      setInventoryConfirm(null);
+      return;
+    }
+    if (confirm.type === "theme") {
+      setActiveThemeId(item.id);
+      setShopError(null);
+      setInventoryConfirm(null);
+      return;
+    }
+    togglePlacement(item.id);
+    setInventoryConfirm(null);
+  };
+
+  const resetGame = () => {
+    [
+      "noaState",
+      "coinsSpent",
+      "coinsEarned",
+      "inventory",
+      "purchasedItemIds",
+      "activeThemeId",
+      "activeItemIds",
+      "lastSavedStatAt",
+      "game_scores",
+      "game_scores_catch",
+      "game_scores_space",
+      "last_catch_run_id",
+      "last_space_run_id",
+    ].forEach((key) => localStorage.removeItem(key));
+    ["last_catch_run_id", "last_space_run_id"].forEach((key) =>
+        sessionStorage.removeItem(key),
+    );
+
+    setNoaState({ ...initialState, lastUpdated: Date.now() });
+    setInventory(initialInventory);
+    setActiveItemIds([]);
+    setPurchasedItemIds([]);
+    setActiveThemeId(null);
+    setCoinsSpent(0);
+    setCoinsEarned(0);
+    setShopCategory(null);
+    setShopIndex(0);
+    setShopConfirm(null);
+    setShopError(null);
+    setShopVisible(false);
+    setInventoryConfirm(null);
+    setSelectedIcon("none");
+    setGamesVisible(false);
+    setAudioIndex(0);
+    setIsSleeping(false);
+    setCurrentAction(null);
+    setSelectedGameIndex(0);
+    setNoaDead(false);
+    setScreen("start");
+    setBackgroundImage("/images/back-grounds/day.png");
+    setMoveCommand(null);
+    setStartCommand(false);
+  };
+
+  const togglePlacement = (itemId: string) => {
+    const item = allItemsMap.get(itemId);
+    if (!item) return;
+    if (item.category !== "decoration" && item.category !== "toys") {
+      setShopError("Solo puedes colocar juguetes o decoraciones en pantalla.");
+      return;
+    }
+    setActiveItemIds((prev) => {
+      if (prev.includes(itemId)) {
+        return prev.filter((id) => id !== itemId);
+      }
+      if (prev.length >= MAX_ACTIVE_ITEMS) {
+        setShopError(
+            `El estante solo tiene espacio para ${MAX_ACTIVE_ITEMS} articulos.`,
+        );
+        return prev;
+      }
+      setShopError(null);
+      return [...prev, itemId];
+    });
+  };
+
 
   const handleBuy = (itemId: string) => {
-    if (!shopCategory) return;
-    if (money <= 0) {
-      setShopError("No tienes suficiente dinero.");
+    const item = allItemsMap.get(itemId);
+    if (!item) {
+      setShopError("No encontramos ese item.");
+      setShopConfirm(null);
       return;
     }
 
-    if (shopCategory === "toys") {
-      if (itemId.toLowerCase().includes("planta")) {
-        setInventory((prev) => ({ ...prev, plant: true }));
-      }
-      if (itemId.toLowerCase().includes("teddy")) {
-        setInventory((prev) => ({ ...prev, teddy: true }));
-      }
+    const isFood = item.category === "food";
+
+    if (money < item.price) {
+      setShopError(
+          "No tienes suficientes coins. Juega un minijuego para conseguir mas.",
+      );
+      setShopConfirm(null);
+      return;
     }
 
-    // Actualizar monedas gastadas
-    const price = 10; // Simulado, en real sería mejor pasarlo junto
-    setCoinsSpent((c) => c + price);
+    if (item.category === "theme") {
+      setInventory((prev) => {
+        if (prev.themes.includes(item.id)) return prev;
+        return { ...prev, themes: [...prev.themes, item.id] };
+      });
+      setActiveThemeId(item.id);
+    }
+
+    if (item.category === "decoration") {
+      setInventory((prev) => {
+        const already = prev.decorations.includes(item.id);
+        return {
+          ...prev,
+          plant: prev.plant || item.id === "dec-02",
+          decorations: already ? prev.decorations : [...prev.decorations, item.id],
+        };
+      });
+    }
+
+    if (item.category === "toys") {
+      setInventory((prev) => {
+        const already = prev.toys.includes(item.id);
+        return {
+          ...prev,
+          teddy: prev.teddy || item.id === "toys-04",
+          toys: already ? prev.toys : [...prev.toys, item.id],
+        };
+      });
+    }
+
+    if (!isFood) {
+      setPurchasedItemIds((prev) =>
+          prev.includes(item.id) ? prev : [...prev, item.id],
+      );
+    }
+
+    if (!isFood && (item.category === "decoration" || item.category === "toys")) {
+      setActiveItemIds((prev) => {
+        if (prev.includes(item.id) || prev.length >= MAX_ACTIVE_ITEMS) {
+          return prev;
+        }
+        return [...prev, item.id];
+      });
+    }
+
+    setCoinsSpent((c) => {
+      const total = c + item.price;
+      localStorage.setItem("coinsSpent", String(total));
+      return total;
+    });
     setShopConfirm(null);
     setShopError(null);
+    setShopCategory(null);
+    setShopIndex(0);
+    setShopVisible(false);
+    setScreen("main");
+
+    if (isFood) {
+      feedNoa();
+    }
   };
 
-// —————————————————————————————————————————————————
+  useEffect(() => {
+    if (!shopVisible) return;
+    if (shopCategory === null) {
+      setShopIndex((i) => Math.min(i, SHOP_MENU_OPTIONS.length));
+      return;
+    }
+    if (shopCategory === "inventory") {
+      setShopIndex((i) => Math.min(i, inventoryItems.length));
+      return;
+    }
+    const itemsByCategory = availableShopItems.filter(
+        (item) => item.category === shopCategory,
+    );
+    const maxIndex = itemsByCategory.length;
+    setShopIndex((i) => Math.min(i, maxIndex));
+  }, [shopVisible, shopCategory, availableShopItems, inventoryItems.length]);
+
   // 1) Cargar estado guardado
   useEffect(() => {
     const saved = localStorage.getItem("noaState");
@@ -156,29 +591,35 @@ export default function NoaTamagotchi() {
 
   // 2) Guardar estado al cambiar
   useEffect(() => {
-    const now = Date.now();
-    const lastSaved = localStorage.getItem("lastSavedStatAt");
-    const shouldSave =
-        !lastSaved || now - parseInt(lastSaved) > 10 * 60 * 1000; // 10 minutos
-
-    if (shouldSave) {
-      localStorage.setItem("lastSavedStatAt", now.toString());
-      const saveStats = async () => {
-        await supabase.from("noa_stats").insert([
-          {
-            hunger: noaState.hunger,
-            happiness: noaState.happiness,
-            energy: noaState.energy,
-          },
-        ]);
-      };
-      saveStats();
-    }
+    localStorage.setItem("noaState", JSON.stringify(noaState));
   }, [noaState]);
 
   useEffect(() => {
     localStorage.setItem("inventory", JSON.stringify(inventory));
   }, [inventory]);
+
+  useEffect(() => {
+    localStorage.setItem("activeItemIds", JSON.stringify(activeItemIds));
+  }, [activeItemIds]);
+
+  useEffect(() => {
+    localStorage.setItem("purchasedItemIds", JSON.stringify(purchasedItemIds));
+  }, [purchasedItemIds]);
+
+  useEffect(() => {
+    const filtered = purchasedItemIds.filter(
+        (id) => allItemsMap.get(id)?.category !== "food",
+    );
+    if (filtered.length !== purchasedItemIds.length) {
+      setPurchasedItemIds(filtered);
+    }
+  }, [purchasedItemIds, allItemsMap]);
+
+  useEffect(() => {
+    if (activeThemeId) {
+      localStorage.setItem("activeThemeId", activeThemeId);
+    }
+  }, [activeThemeId]);
 
   useEffect(() => {
     localStorage.setItem("coinsSpent", String(coinsSpent));
@@ -187,6 +628,12 @@ export default function NoaTamagotchi() {
   useEffect(() => {
     localStorage.setItem("coinsEarned", String(coinsEarned));
   }, [coinsEarned]);
+
+  useEffect(() => {
+    if (!shopError) return;
+    const id = setTimeout(() => setShopError(null), 2500);
+    return () => clearTimeout(id);
+  }, [shopError]);
 
   // 3) Decaimiento de stats cada minuto
   useEffect(() => {
@@ -202,15 +649,7 @@ export default function NoaTamagotchi() {
     return () => clearInterval(id);
   }, []);
 
-  // 4) Reloj
-  useEffect(() => {
-    const tick = () => setTime(new Date());
-    tick();
-    const id = setInterval(tick, 60000);
-    return () => clearInterval(id);
-  }, []);
-
-  // 5) Fondo día/tarde/noche y forzar noche si duerme
+  // 5) Fondo dia/tarde/noche y forzar noche si duerme. El tema solo cambia la consola.
   useEffect(() => {
     if (isSleeping) {
       setBackgroundImage("/images/back-grounds/night.png");
@@ -226,7 +665,7 @@ export default function NoaTamagotchi() {
     }
   }, [time, isSleeping]);
 
-  // 6) Recargar energía mientras duerme
+  // 6) Recargar energia mientras duerme
   useEffect(() => {
     let id: NodeJS.Timeout;
     if (isSleeping) {
@@ -240,13 +679,25 @@ export default function NoaTamagotchi() {
     return () => clearInterval(id);
   }, [isSleeping]);
 
-  // 7) Despertar cuando llegue a 100 de energía
+  // 7) Despertar cuando llegue a 100 de energia
   useEffect(() => {
     if (isSleeping && noaState.energy >= 100) {
       setIsSleeping(false);
       setCurrentAction(null);
     }
   }, [noaState.energy, isSleeping]);
+
+  const playSfx = useCallback(
+      (id: string) => {
+        if (!actionSoundEnabled) return;
+        const el = document.getElementById(id) as HTMLAudioElement | null;
+        if (el) {
+          el.currentTime = 0;
+          void el.play();
+        }
+      },
+      [actionSoundEnabled],
+  );
 
   // 9) Morir si toda las stat llegan a  0
   useEffect(() => {
@@ -261,13 +712,14 @@ export default function NoaTamagotchi() {
       if (screen === "catch" || screen === "space") {
         setScreen("main");
       }
+      playSfx("gameover-sound");
     }
-  }, [noaState.hunger, noaState.happiness, noaState.energy, screen]);
+  }, [noaState.hunger, noaState.happiness, noaState.energy, screen, playSfx]);
 
-  // —————————————————————————————————————————————————
-  // Acciones básicas
+  // Acciones basicas
   const feedNoa = () => {
     if (isSleeping || noaDead) return;
+    playSfx("eating-sound");
     setCurrentAction("eating");
     setNoaState((p) => ({
       ...p,
@@ -279,6 +731,7 @@ export default function NoaTamagotchi() {
 
   const petNoa = () => {
     if (isSleeping || noaDead) return;
+    playSfx("petting-sound");
     setCurrentAction("petting");
     setNoaState((p) => ({
       ...p,
@@ -300,22 +753,23 @@ export default function NoaTamagotchi() {
     }
   };
 
-  const handleGameEnd = (score: number, newRecord: boolean) => {
-    const reward = 10 + (newRecord ? 5 : 0);
-    const total = coinsEarned + reward;
-    setCoinsEarned(total);
-    localStorage.setItem("coinsEarned", String(total));
-  };
+  const handleGameEnd = useCallback(
+      (score: number, newRecord: boolean) => {
+        const reward = 10 + (newRecord ? 5 : 0);
+        if (newRecord) {
+          playSfx("win-sound");
+        }
+        setCoinsEarned((prev) => {
+          const total = prev + reward;
+          localStorage.setItem("coinsEarned", String(total));
+          return total;
+        });
+      },
+      [playSfx],
+  );
 
   const playActionSound = () => {
-    if (!actionSoundEnabled) return;
-    const el = document.getElementById(
-        "action-sound",
-    ) as HTMLAudioElement | null;
-    if (el) {
-      el.currentTime = 0;
-      void el.play();
-    }
+    playSfx("action-sound");
   };
 
   const handleAButton = () => {
@@ -331,19 +785,71 @@ export default function NoaTamagotchi() {
 
     if (shopVisible) {
       playActionSound();
+      if (inventoryConfirm) {
+        confirmInventoryAction(inventoryConfirm);
+        return;
+      }
       if (shopConfirm) {
         handleBuy(shopConfirm);
-      } else if (shopCategory === null) {
-        const categories = ["food", "toys", "theme"] as const;
-        if (shopIndex === categories.length) {
+        return;
+      }
+
+      if (shopCategory === null) {
+        const isExit = shopIndex === SHOP_MENU_OPTIONS.length;
+        const selectedCategory = SHOP_MENU_OPTIONS[shopIndex];
+        if (isExit) {
           setShopVisible(false);
           setShopIndex(0);
           setShopError(null);
           setScreen("main");
-        } else {
-          setShopCategory(categories[shopIndex]);
+        } else if (selectedCategory) {
+          setShopCategory(selectedCategory);
           setShopIndex(0);
         }
+        return;
+      }
+
+      if (shopCategory === "inventory") {
+        const isBack = shopIndex === inventoryItems.length;
+        if (isBack) {
+          setShopCategory(null);
+          setShopIndex(0);
+          setShopError(null);
+          return;
+        }
+        const selectedItem = inventoryItems[shopIndex];
+        if (!selectedItem) {
+          setShopError("No hay articulos en tu inventario.");
+          return;
+        }
+        setInventoryConfirm({
+          id: selectedItem.id,
+          type: selectedItem.category === "theme" ? "theme" : "toggle",
+        });
+        return;
+      }
+
+      const itemsByCategory = availableShopItems.filter(
+          (item) => item.category === shopCategory,
+      );
+      const isBack = shopIndex === itemsByCategory.length;
+      if (isBack) {
+        setShopCategory(null);
+        setShopIndex(0);
+        return;
+      }
+
+      const selectedItem = itemsByCategory[shopIndex];
+      if (selectedItem) {
+        if (money < selectedItem.price) {
+          setShopError("No tienes suficientes coins. Juega un minijuego para conseguir mas.");
+          setShopConfirm(null);
+          return;
+        }
+        setShopConfirm(selectedItem.id);
+        setShopError(null);
+      } else {
+        setShopError("No hay items disponibles en esta categoria.");
       }
       return;
     }
@@ -364,6 +870,8 @@ export default function NoaTamagotchi() {
       setShopVisible(true);
       setShopIndex(0);
       setShopCategory(null);
+      setShopError(null);
+      setShopConfirm(null);
       return;
     }
     if (selectedIcon === "games") {
@@ -373,7 +881,7 @@ export default function NoaTamagotchi() {
     }
   };
 
-  // Limpiar acción después de 2s (si no duerme ni está muerto)
+  // Limpiar accion despues de 2s (si no duerme ni esta muerto)
   useEffect(() => {
     if (currentAction && !isSleeping && !noaDead) {
       const timer = setTimeout(() => setCurrentAction(null), 2000);
@@ -381,7 +889,6 @@ export default function NoaTamagotchi() {
     }
   }, [currentAction, isSleeping, noaDead]);
 
-  // —————————————————————————————————————————————————
   // D-PAD
   const handleMove = (dir: "left" | "right" | "up" | "down"): void => {
     if (noaDead) return;
@@ -390,8 +897,7 @@ export default function NoaTamagotchi() {
     setTimeout(() => setMoveCommand(null), 100);
   };
 
-  // —————————————————————————————————————————————————
-  // Cambiar pantalla “start” ↔ “main” ↔ “menu”
+  // Cambiar pantalla "start" -> "main" -> "menu"
   const handleStart = () => {
     if (noaDead) return;
     if (screen === "catch" || screen === "space") {
@@ -399,7 +905,7 @@ export default function NoaTamagotchi() {
       setTimeout(() => setStartCommand(false), 100);
       return;
     }
-    // Si estamos en “start” → “main”
+    // Si estamos en "start" -> "main"
     if (screen === "start") {
       setScreen("main");
     }
@@ -409,15 +915,21 @@ export default function NoaTamagotchi() {
     if (noaDead) return;
     playActionSound();
     if (shopVisible) {
+      if (inventoryConfirm) {
+        setInventoryConfirm(null);
+        return;
+      }
       if (shopConfirm) {
         setShopConfirm(null);
       } else if (shopCategory) {
         setShopCategory(null);
         setShopIndex(0);
+        setShopError(null);
       } else {
         setShopVisible(false);
         setShopIndex(0);
         setShopError(null);
+        setInventoryConfirm(null);
         setScreen("main");
       }
     } else if (visible) {
@@ -434,6 +946,7 @@ export default function NoaTamagotchi() {
   // === iniciar el minijuego seleccionado
   const startSelectedGame = () => {
     if (noaDead || isSleeping) return;
+    playSfx("start-sound");
     gaming();
     setGamesVisible(false);
     setScreen(menuOptions[selectedGameIndex]);
@@ -458,7 +971,7 @@ export default function NoaTamagotchi() {
 
   const emotion = getEmotional();
 
-  // 10) Control de música de fondo
+  // 10) Control de musica de fondo
   useEffect(() => {
     const normalBgm = document.getElementById("normal-bgm") as HTMLAudioElement;
     const warningBgm = document.getElementById(
@@ -504,6 +1017,11 @@ export default function NoaTamagotchi() {
       document.getElementById("warning-bgm") as HTMLAudioElement,
       document.getElementById("warning-sound") as HTMLAudioElement,
       document.getElementById("action-sound") as HTMLAudioElement,
+      document.getElementById("win-sound") as HTMLAudioElement,
+      document.getElementById("gameover-sound") as HTMLAudioElement,
+      document.getElementById("petting-sound") as HTMLAudioElement,
+      document.getElementById("eating-sound") as HTMLAudioElement,
+      document.getElementById("start-sound") as HTMLAudioElement,
     ];
     allSounds.forEach((audio) => {
       if (audio) {
@@ -522,7 +1040,7 @@ export default function NoaTamagotchi() {
   }, [actionSoundEnabled]);
 
   return (
-      <div className="gameboy">
+      <div className="gameboy" style={gameboyStyle}>
         {/* -------------------- HEADER -------------------- */}
         <div className="gameboy-top relative">
           <img
@@ -534,6 +1052,11 @@ export default function NoaTamagotchi() {
           <audio id="normal-bgm" src="/sounds/sound-1.mp3" loop />
           <audio id="warning-bgm" src="/sounds/warning-music.mp3" loop />
           <audio id="action-sound" src="/sounds/seleccionar.mp3" />
+          <audio id="win-sound" src="/sounds/win.mp3" />
+          <audio id="gameover-sound" src="/sounds/game-over.mp3" />
+          <audio id="petting-sound" src="/sounds/petting.mp3" />
+          <audio id="eating-sound" src="/sounds/eating-sound-effect-36186.mp3" />
+          <audio id="start-sound" src="/sounds/start the fame.mp3" />
         </div>
 
         {/* -------------------- PANTALLA -------------------- */}
@@ -570,45 +1093,70 @@ export default function NoaTamagotchi() {
                   </div>
                 </div>
 
-                {/* Animación de Noa según estado */}
+                {/* Animacion de Noa segun estado */}
                 <div className="relative z-10 flex flex-col items-center justify-end w-full p-2 pt-6">
                   <div className="relative flex items-end justify-center w-full h-full">
-                    {inventory.plant && (
-                        <span className="absolute left-2 bottom-0 text-xl">🌱</span>
-                    )}
-                    {inventory.teddy && (
-                        <span className="absolute right-2 bottom-0 text-xl">🧸</span>
+                    <div className="absolute bottom-1 left-0 right-0 flex items-end justify-center pointer-events-none">
+                      <div
+                          className="relative w-[250px] h-[130px] drop-shadow-lg"
+                          style={{
+                            backgroundImage:
+                                "url(/images/back-grounds/estante-de-juguetes.png)",
+                            backgroundSize: "contain",
+                            backgroundRepeat: "no-repeat",
+                            backgroundPosition: "center",
+                          }}
+                          aria-label="Estante de Noa"
+                      >
+                        {shelfItems.slice(0, SHELF_POSITIONS.length).map((item, idx) => {
+                          const pos = SHELF_POSITIONS[idx];
+                          return (
+                              <img
+                                  key={item.id}
+                                  src={item.image_url}
+                                  alt={item.name}
+                                  className="absolute w-12 h-12 pixel-art drop-shadow"
+                                  style={{ left: pos.left, top: pos.top }}
+                              />
+                          );
+                        })}
+                      </div>
+                    </div>
+                    {houseItem && (
+                        <img
+                            src={houseItem.image_url}
+                            alt={houseItem.name}
+                            className="absolute bottom-1 left-1 w-16 h-16 pixel-art drop-shadow pointer-events-none z-10"
+                        />
                     )}
                     {isSleeping ? (
-                        <div className="w-[40px] h-[80px]">
+                        <div className="relative z-10 w-full h-[64px] flex items-end justify-start pl-6">
                           <NoaSleeping />
                         </div>
                     ) : currentAction === "eating" ? (
-                        <div className="w-[40px] h-[80px]">
+                        <div className="relative z-10 w-full h-[64px] flex items-end justify-start pl-6">
                           <NoaEating />
                         </div>
                     ) : currentAction === "petting" ? (
-                        <div className="w-[40px] h-[80px]">
+                        <div className="relative z-10 w-full h-[64px] flex items-end justify-start pl-6">
                           <NoaPetting />
                         </div>
                     ) : (
-                        <div className="w-[40px] h-[80px]">
+                        <div className="relative z-10 w-full h-[64px] flex items-end justify-start pl-6">
                           <NoaWalking />
                         </div>
                     )}
                   </div>
                 </div>
-
-                {/* === Alerta 8 bit según emoción === */}
                 {emotion !== "normal" && (
                     <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/50 z-30">
                       <div
                           className="pixel-font text-red-400 text-[10px] px-2 py-1 border border-red-400 rounded animate-shake"
                           style={{ backgroundColor: "rgba(0,0,0,0.7)" }}
                       >
-                        {emotion === "hungry" && "¡Noah tiene HAMBRE! 🍖"}
-                        {emotion === "tired" && "¡Noah está CANSADO! 💤"}
-                        {emotion === "sad" && "¡Noah está TRISTE! 🤕"}
+                        {emotion === "hungry" && "!Noah tiene HAMBRE!"}
+                        {emotion === "tired" && "!Noah esta CANSADO! ¡Que mejor que una siesta! "}
+                        {emotion === "sad" && "!Noah está TRISTE! ¡Que mejor que un abrazo!"}
                       </div>
                     </div>
                 )}
@@ -622,6 +1170,7 @@ export default function NoaTamagotchi() {
                   moveCommand={moveCommand}
                   startCommand={startCommand}
                   onGameEnd={handleGameEnd}
+                  sfxEnabled={actionSoundEnabled}
               />
           )}
 
@@ -632,6 +1181,7 @@ export default function NoaTamagotchi() {
                   moveCommand={moveCommand}
                   startCommand={startCommand}
                   onGameEnd={handleGameEnd}
+                  sfxEnabled={actionSoundEnabled}
               />
           )}
 
@@ -645,7 +1195,7 @@ export default function NoaTamagotchi() {
                 />
                 <h1 className="text-sm font-bold mb-1 pixel-font">GAME OVER</h1>
                 <p className="text-xs mb-2 pixel-font">
-                  Pulsa “RESET” para reiniciar
+                  Pulsa ÔÇ£RESETÔÇØ para reiniciar
                 </p>
               </div>
           )}
@@ -673,6 +1223,8 @@ export default function NoaTamagotchi() {
                       onClick={() => {
                         setShopIndex(0);
                         setShopCategory(null);
+                        setShopError(null);
+                        setShopConfirm(null);
                         setShopVisible(true);
                       }}
                   >
@@ -738,7 +1290,32 @@ export default function NoaTamagotchi() {
               money={money}
               confirming={shopConfirm}
               error={shopError}
-              onBuy={(itemId) => handleBuy(itemId)}/>
+              items={availableShopItems}
+              inventoryItems={inventoryItems}
+              activeItemIds={activeItemIds}
+              maxActiveItems={MAX_ACTIVE_ITEMS}
+              onBuy={(itemId) => handleBuy(itemId)}
+          />
+          {inventoryConfirm && shopVisible && (() => {
+            const item =
+                inventoryItems.find((i) => i.id === inventoryConfirm.id) ||
+                allItemsMap.get(inventoryConfirm.id);
+            if (!item) return null;
+            const isActive = activeItemIds.includes(item.id);
+            const message =
+                inventoryConfirm.type === "theme"
+                    ? `¿Aplicar el tema ${item.name}?`
+                    : isActive
+                        ? `¿Quitar ${item.name} de pantalla y guardarlo?`
+                        : `¿Mostrar ${item.name} en pantalla?`;
+            return (
+                <div className="absolute inset-0 bg-[#113] z-30 text-blue-200 pixel-font p-3 flex flex-col items-center justify-center border-2 border-blue-400">
+                  <h2 className="text-center mb-2 text-sm">Confirmar</h2>
+                  <p className="text-center text-xs mb-2">{message}</p>
+                  <p className="text-[10px]">A = Si &nbsp; B = No</p>
+                </div>
+            );
+          })()}
           <GamesModal visible={gamesVisible} selectedIndex={selectedGameIndex} />
         </div>
         {/* -------------------- CONTROLES -------------------- */}
@@ -749,15 +1326,7 @@ export default function NoaTamagotchi() {
               onSleep={() => {
                 if (!isSleeping && !noaDead) setIsSleeping(true);
               }}
-              onReset={() => {
-                localStorage.removeItem("noaState");
-                setNoaState(initialState);
-                setScreen("start");
-                setIsSleeping(false);
-                setCurrentAction(null);
-                setSelectedGameIndex(0);
-                setNoaDead(false);
-              }}
+              onReset={resetGame}
               onStart={handleStart}
               onStartGame={startSelectedGame}
               onMove={(dir) => {
@@ -768,9 +1337,17 @@ export default function NoaTamagotchi() {
                   else if (dir === "right")
                     setAudioIndex((i) => (i + 1) % (max + 1));
                 } else if (shopVisible) {
-                  const categoriesCount = 3;
-                  const max = shopCategory ? 5
-                      : categoriesCount;
+                  const itemsInCategory =
+                      shopCategory === "inventory"
+                          ? inventoryItems
+                          : shopCategory
+                              ? availableShopItems.filter(
+                                  (item) => item.category === shopCategory,
+                              )
+                              : [];
+                  const max = shopCategory
+                      ? itemsInCategory.length
+                      : SHOP_MENU_OPTIONS.length;
                   if (dir === "up")
                     setShopIndex((i) => Math.max(0, i - 1));
                   else if (dir === "down")

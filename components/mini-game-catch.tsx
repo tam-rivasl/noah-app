@@ -2,13 +2,13 @@
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import ScoreBoard from "./score-board";
-import { supabase } from "@/lib/supabase";
 
 interface MiniGameCatchProps {
   onExit: () => void;
   moveCommand: "left" | "right" | "up" | "down" | null;
   startCommand: boolean;
   onGameEnd?: (score: number, newRecord: boolean) => void;
+  sfxEnabled?: boolean;
 }
 
 interface Obstacle {
@@ -47,7 +47,28 @@ const instructions = [
   "– ¡Buena suerte!",
 ];
 
-export default function MiniGameCatch({ onExit, moveCommand, startCommand, onGameEnd }: MiniGameCatchProps) {
+const SCORE_STORAGE_KEY = "game_scores_catch";
+const MAX_SCORES_PER_GAME = 20;
+const SESSION_CATCH_KEY = "last_catch_run_id";
+
+const loadScores = () => {
+  try {
+    const raw = localStorage.getItem(SCORE_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+};
+
+const saveScores = (records: any[]) => {
+  try {
+    localStorage.setItem(SCORE_STORAGE_KEY, JSON.stringify(records));
+  } catch (err) {
+    console.error("No se pudo guardar el historial", err);
+  }
+};
+
+export default function MiniGameCatch({ onExit, moveCommand, startCommand, onGameEnd, sfxEnabled = true }: MiniGameCatchProps) {
   const [started, setStarted] = useState(false);
   const [noaX, setNoaX] = useState(50);
   const [noaY, setNoaY] = useState(GROUND_OFFSET);
@@ -60,6 +81,9 @@ export default function MiniGameCatch({ onExit, moveCommand, startCommand, onGam
   const [groundFrameIndex, setGroundFrameIndex] = useState(0);
   const [jumpFrameIndex, setJumpFrameIndex] = useState(0);
   const [viewingRecords, setViewingRecords] = useState(false);
+  const savedRef = useRef(false);
+  const runIdRef = useRef(`${Date.now()}-${Math.random()}`);
+  const gameOverSoundPlayedRef = useRef(false);
 
   const startTimeRef = useRef<number>(Date.now());
   const lastTimeRef = useRef<number>(Date.now());
@@ -114,6 +138,9 @@ export default function MiniGameCatch({ onExit, moveCommand, startCommand, onGam
     if (!started && startCommand) {
       setCurrentLine(instructions.length);
       setStarted(true);
+      savedRef.current = false;
+      runIdRef.current = `${Date.now()}-${Math.random()}`;
+      sessionStorage.removeItem(SESSION_CATCH_KEY);
     }
   }, [startCommand, started]);
 
@@ -220,39 +247,57 @@ export default function MiniGameCatch({ onExit, moveCommand, startCommand, onGam
   }, [started, gameOver, noaX, noaY, noaSize, landingGrace, triggerBuff]);
 
   useEffect(() => {
-    if (!gameOver) return;
-    const saveRecord = async () => {
-      const elapsedMs = Date.now() - startTimeRef.current;
-      const m = Math.floor(elapsedMs / 60000);
-      const s = Math.floor((elapsedMs % 60000) / 1000);
-      const duration = `00:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+    if (!gameOver || savedRef.current) return;
+    const lastRunSaved = sessionStorage.getItem(SESSION_CATCH_KEY);
+    if (lastRunSaved && lastRunSaved === runIdRef.current) return;
+    savedRef.current = true;
+    sessionStorage.setItem(SESSION_CATCH_KEY, runIdRef.current);
+    const elapsedMs = Date.now() - startTimeRef.current;
+    const m = Math.floor(elapsedMs / 60000);
+    const s = Math.floor((elapsedMs % 60000) / 1000);
+    const duration = `00:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 
-      try {
-        await supabase.from("game_scores").insert([
-          {
-            score,
-            game_type: "catch",
-            date: new Date().toISOString().split("T")[0], // yyyy-mm-dd
-            time: duration, // formato HH:mm:ss idealmente
-          },
-        ]);
-      } catch (e) {
-        console.error("❌ Error al guardar puntuación:", e);
-      }
-
-      const { data } = await supabase
-          .from("game_scores")
-          .select("score")
-          .eq("game_type", "catch")
-          .order("score", { ascending: false })
-          .limit(1);
-
-      const prevBest = data?.[0]?.score ?? 0;
-      const isNew = score > prevBest;
-      onGameEnd?.(score, isNew);
+    const all = loadScores();
+    const sameGame = all.filter((item: any) => item.gameType === "catch");
+    const bestBefore = sameGame.reduce(
+        (max: number, item: any) => Math.max(max, item.score ?? 0),
+        0,
+    );
+    const entry = {
+      id: `${Date.now()}-${Math.random()}`,
+      date: new Date().toISOString().split("T")[0],
+      time: duration,
+      score,
+      gameType: "catch",
     };
-    saveRecord();
+    const updatedSame = [...sameGame, entry]
+        .sort((a, b) => b.score - a.score)
+        .slice(0, MAX_SCORES_PER_GAME);
+    const updated = [
+      ...all.filter((item: any) => item.gameType !== "catch"),
+      ...updatedSame,
+    ];
+    saveScores(updated);
+    const isNew = score > bestBefore;
+    onGameEnd?.(score, isNew);
+  }, [gameOver, onGameEnd, score]);
+
+  useEffect(() => {
+    if (!gameOver) {
+      savedRef.current = false;
+      gameOverSoundPlayedRef.current = false;
+    }
   }, [gameOver]);
+
+  useEffect(() => {
+    if (!gameOver || gameOverSoundPlayedRef.current || !sfxEnabled) return;
+    const el = document.getElementById("gameover-sound") as HTMLAudioElement | null;
+    if (el) {
+      gameOverSoundPlayedRef.current = true;
+      el.currentTime = 0;
+      void el.play();
+    }
+  }, [gameOver, sfxEnabled]);
 
   const [currentLine, setCurrentLine] = useState(0);
   const [currentChar, setCurrentChar] = useState(0);
@@ -351,3 +396,5 @@ export default function MiniGameCatch({ onExit, moveCommand, startCommand, onGam
     </div>
   );
 }
+
+

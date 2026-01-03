@@ -2,6 +2,8 @@
 
 import React, { useEffect, useState } from "react";
 
+const SPRITE_SIZE = 45;
+
 export default function NoaSleeping() {
   const [frameIndex, setFrameIndex] = useState(0);
   const [emotes, setEmotes] = useState<{ id: number; left: number }[]>([]);
@@ -38,30 +40,27 @@ export default function NoaSleeping() {
   };
 
   return (
-    <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex justify-center items-end">
-      <div className="relative w-[96px] h-[96px] flex justify-center items-end">
-        {/* Emotes 💤 flotando */}
-        {emotes.map((emote) => (
-          <div
-            key={emote.id}
-            className="absolute bottom-20 animate-float-up z-20 text-2xl"
-            style={{ left: `calc(50% + ${emote.left}px)` }}
-            onAnimationEnd={() => handleAnimationEnd(emote.id)}
-          >
-            💤
-          </div>
-        ))}
+    <div className="relative w-[45px] h-[45px] flex justify-center items-end">
+      {emotes.map((emote) => (
+        <div
+          key={emote.id}
+          className="absolute bottom-10 animate-float-up z-20 text-lg"
+          style={{ left: `calc(50% + ${emote.left}px)` }}
+          onAnimationEnd={() => handleAnimationEnd(emote.id)}
+        >
+          💤
+        </div>
+      ))}
 
-        {/* Noa durmiendo: bucle de 3 imágenes */}
-        <img
-          src={frames[frameIndex]}
-          alt="Noa durmiendo"
-          width={80}
-          height={80}
-          className="pixel-art z-10"
-          onError={() => console.error("No se pudo cargar:", frames[frameIndex])}
-        />
-      </div>
+      <img
+        src={frames[frameIndex]}
+        alt="Noa durmiendo"
+        width={SPRITE_SIZE}
+        height={SPRITE_SIZE}
+        className="pixel-art z-10 object-contain"
+        onError={() => console.error("No se pudo cargar:", frames[frameIndex])}
+        style={{ width: `${SPRITE_SIZE}px`, height: `${SPRITE_SIZE}px` }}
+      />
     </div>
   );
 }

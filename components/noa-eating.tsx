@@ -1,111 +1,37 @@
-/* Archivo corregido: NoaTamagotchi con Supabase */
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
-import { supabase } from "@/lib/supabase";
+import Image from "next/image";
+import { useEffect, useState } from "react";
 
-import StatusBars from "./status-bars";
-import ActionButtons from "./action-buttons";
-import NoaWalking from "./noa-walking";
-import NoaEating from "./noa-eating";
-import NoaSleeping from "./noa-sleeping";
-import { NoaPetting } from "./noa-petting";
-import MiniGameCatch from "./mini-game-catch";
-import MiniGameSpace from "./mini-game-space";
-import AudioSettingsModal from "./AudioSettingsModal";
-import ShopScreen from "./shop-screen";
-import GamesModal from "./games-modal";
+const EATING_FRAMES = [
+  "/images/spreeds/eating/noa-comiendo-1.png",
+  "/images/spreeds/eating/noa-comiendo-2.png",
+];
 
-export type NoaState = {
-  hunger: number;
-  happiness: number;
-  energy: number;
-  lastUpdated: number;
-};
+const SPRITE_SIZE = 45;
 
-export default function NoaTamagotchi() {
-  const [noaState, setNoaState] = useState<NoaState>({
-    hunger: 80,
-    happiness: 80,
-    energy: 80,
-    lastUpdated: Date.now()
-  });
+export default function NoaEating() {
+  const [frameIndex, setFrameIndex] = useState(0);
 
-  const [coinsEarned, setCoinsEarned] = useState(0);
-  const [coinsSpent, setCoinsSpent] = useState(0);
-
-  // Cargar estado desde Supabase al iniciar
   useEffect(() => {
-    const loadStats = async () => {
-      try {
-        console.log('[noa-eating.loadStats]');
-        const { data, error } = await supabase
-          .from("noa_stats")
-          .select("*")
-          .order("updated_at", { ascending: false })
-          .limit(1);
-
-        if (error) throw error;
-
-        if (data && data.length > 0) {
-          const latest = data[0];
-          setNoaState({
-            hunger: latest.hunger,
-            happiness: latest.happiness,
-            energy: latest.energy,
-            lastUpdated: Date.now(),
-          });
-          setCoinsEarned(latest.coins_earned ?? 0);
-          setCoinsSpent(latest.coins_spent ?? 0);
-        }
-        console.log('[noa-eating.loadStats] done');
-      } catch (e) {
-        console.error('Error loading noa stats', e);
-      }
-    };
-
-    void loadStats();
+    const id = setInterval(
+        () => setFrameIndex((idx) => (idx + 1) % EATING_FRAMES.length),
+        250,
+    );
+    return () => clearInterval(id);
   }, []);
 
-  // Guardar estado en Supabase cada vez que cambia
-  useEffect(() => {
-    const saveStats = async () => {
-      try {
-        console.log('[noa-eating.saveStats] saving');
-        await supabase.from("noa_stats").insert([
-          {
-            hunger: noaState.hunger,
-            happiness: noaState.happiness,
-            energy: noaState.energy,
-            coins_earned: coinsEarned,
-            coins_spent: coinsSpent,
-          },
-        ]);
-        console.log('[noa-eating.saveStats] done');
-      } catch (e) {
-        console.error('Error saving noa stats', e);
-      }
-    };
-
-    void saveStats();
-  }, [noaState, coinsEarned, coinsSpent]);
   return (
-    <div>
-<StatusBars noaState={noaState} />
-<ActionButtons
-        onFeed={() => { }}
-        onPet={() => { }}
-        onSleep={() => { }}
-        onReset={() => { }}
-        onStart={() => { }}
-        onMove={(dir) => { }}
-        onBack={() => { }}
-        isSleeping={false}
-        isStarting={false}
-        inMenu={false}
-        onStartGame={() => { }}
+    <div className="w-[45px] h-[45px] flex items-end justify-center relative">
+      <Image
+        src={EATING_FRAMES[frameIndex]}
+        alt="Noa comiendo"
+        width={SPRITE_SIZE}
+        height={SPRITE_SIZE}
+        className="pixel-art object-contain"
+        style={{ width: `${SPRITE_SIZE}px`, height: `${SPRITE_SIZE}px` }}
       />
-
+      <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-6 h-[6px] bg-[#c68c53] rounded-sm shadow-inner" />
     </div>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState, useRef } from "react";
 import { Moon } from "lucide-react";
 
 interface ActionButtonsProps {
@@ -31,11 +31,15 @@ export default function ActionButtons({
   onStartGame,
 }: ActionButtonsProps) {
   const [activeButton, setActiveButton] = useState<string | null>(null);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleAction = (action: string, callback?: () => void) => {
     setActiveButton(action);
     if (callback) callback();
-    setTimeout(() => setActiveButton(null), 200);
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    timeoutRef.current = setTimeout(() => setActiveButton(null), 200);
   };
 
   return (
